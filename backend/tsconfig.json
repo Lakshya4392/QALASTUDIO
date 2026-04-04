@@ -34,7 +34,9 @@
     "exclude": [
         "node_modules",
         "**/*.test.ts",
-        "**/*.property.test.ts"
+        "**/*.property.test.ts",
+        "src/__tests__",
+        "src/__tests__/**/*"
     ],
     "include": [
         "src/**/*"

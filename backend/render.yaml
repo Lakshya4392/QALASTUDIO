@@ -1,10 +1,10 @@
 services:
   - type: web
-    name: qala-studios-backend
+    name: qalastudio-backend
     runtime: node
     buildCommand: npm run render-build
     startCommand: npm start
-    plan: free # or starter
+    plan: free
     envVars:
       - key: NODE_ENV
         value: production
@@ -13,7 +13,7 @@ services:
       - key: DATABASE_URL
         fromConfig: DATABASE_URL
       - key: FRONTEND_URL
-        fromConfig: FRONTEND_URL # Add your Vercel URL here after deployment
+        value: https://qalastudio.vercel.app
       - key: JWT_SECRET
         generateValue: true
       - key: GEMINI_API_KEY
