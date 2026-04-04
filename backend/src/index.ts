@@ -66,8 +66,8 @@ app.use(helmet({
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      scriptSrc: ["'self'", "unsafe-inline"],
-      imgSrc: ["'self'", "data:", "https://images.unsplash.com"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "https://images.unsplash.com", "https://res.cloudinary.com"],
     },
   } : false,
   hsts: {
@@ -115,13 +115,28 @@ app.use(requestSizeLimit);
 
 // 7. CORS - whitelist only configured frontend URLs
 const corsOrigins = process.env.FRONTEND_URL
-  ? process.env.FRONTEND_URL.split(',').map((url: string) => url.trim())
+  ? process.env.FRONTEND_URL.split(',').map((url: string) => url.trim().replace(/\/$/, ''))
   : ['http://localhost:5173'];
 
 app.use(cors({
-  origin: corsOrigins,
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl)
+    if (!origin) return callback(null, true);
+    
+    // Normalize requested origin (strip trailing slash if any)
+    const normalizedOrigin = origin.replace(/\/$/, '');
+    
+    if (corsOrigins.indexOf(normalizedOrigin) !== -1 || isDev) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'X-Request-ID'],
+  exposedHeaders: ['X-Request-ID', 'X-Response-Time'],
   credentials: true,
-  exposedHeaders: ['X-Request-ID', 'X-Response-Time']
+  optionsSuccessStatus: 204
 }));
 
 // 8. Compression
