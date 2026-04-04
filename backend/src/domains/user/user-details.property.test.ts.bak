@@ -1,0 +1,199 @@
+import fc from 'fast-check';
+import { UserDetails } from './user-details.model';
+import { UserDetailsService } from './user-details.service';
+import prisma from '../../config/db';
+
+// Feature: email-confirmation-system, Property 2: User Data Persistence Round Trip
+
+describe('UserDetails Property-Based Tests', () => {
+  let userDetailsService: UserDetailsService;
+
+  beforeAll(async () => {
+    userDetailsService = new UserDetailsService();
+  });
+
+  beforeEach(async () => {
+    // Clean up test data before each test
+    await prisma.userDetails.deleteMany({
+      where: {
+        email: {
+          contains: 'test-property'
+        }
+      }
+    });
+  });
+
+  afterAll(async () => {
+    // Clean up test data after all tests
+    await prisma.userDetails.deleteMany({
+      where: {
+        email: {
+          contains: 'test-property'
+        }
+      }
+    });
+    await prisma.$disconnect();
+  });
+
+  /**
+   * Property 2: User Data Persistence Round Trip
+   * For any valid user details submitted through the booking form, 
+   * storing the data in the database and then retrieving it should 
+   * produce equivalent user information linked to the correct booking record.
+   * 
+   * Validates: Requirements 2.3, 2.5
+   */
+  describe('Property 2: User Data Persistence Round Trip', () => {
+    it('should maintain data integrity through store-retrieve cycle', async () => {
+      await fc.assert(
+        fc.asyncProperty(
+          fc.record({
+            fullName: fc.string({ minLength: 1, maxLength: 100 })
+              .filter((s: string) => s.trim().length > 0)
+              .map((s: string) => s.replace(/[<>]/g, ''))
+              .filter((s: string) => /^[a-zA-Z\s\-'\.]+$/.test(s)),
+            email: fc.emailAddress()
+              .map((email: string) => `test-property-${Date.now()}-${Math.random().toString(36).substr(2, 9)}@${email.split('@')[1]}`),
+            phone: fc.oneof(
+              fc.constant('+1234567890'),
+              fc.constant('1234567890'),
+              fc.constant('+1 (234) 567-8900')
+            ),
+            company: fc.option(
+              fc.string({ maxLength: 200 })
+                .map((s: string) => s.replace(/[<>]/g, '')),
+              { nil: undefined }
+            ),
+            specialRequirements: fc.option(
+              fc.string({ maxLength: 1000 })
+                .map((s: string) => s.replace(/[<>]/g, '')),
+              { nil: undefined }
+            )
+          }),
+          async (userData: any) => {
+            const originalUserDetails = new UserDetails(userData);
+            
+            const validation = originalUserDetails.validate();
+            if (!validation.isValid) {
+              return;
+            }
+
+            const storedRecord = await userDetailsService.create(originalUserDetails);
+            const retrievedUserDetails = await userDetailsService.findById(storedRecord.id);
+            
+            expect(retrievedUserDetails).not.toBeNull();
+            
+            if (retrievedUserDetails) {
+              expect(retrievedUserDetails.fullName).toBe(originalUserDetails.fullName);
+              expect(retrievedUserDetails.email).toBe(originalUserDetails.email.toLowerCase());
+              expect(retrievedUserDetails.phone).toBe(originalUserDetails.phone);
+              
+              if (originalUserDetails.company === undefined || originalUserDetails.company === null || originalUserDetails.company.trim() === '') {
+                expect(retrievedUserDetails.company).toBeUndefined();
+              } else {
+                expect(retrievedUserDetails.company).toBe(originalUserDetails.company);
+              }
+              
+              if (originalUserDetails.specialRequirements === undefined || originalUserDetails.specialRequirements === null || originalUserDetails.specialRequirements.trim() === '') {
+                expect(retrievedUserDetails.specialRequirements).toBeUndefined();
+              } else {
+                expect(retrievedUserDetails.specialRequirements).toBe(originalUserDetails.specialRequirements);
+              }
+              
+              const retrievedValidation = retrievedUserDetails.validate();
+              expect(retrievedValidation.isValid).toBe(true);
+              
+              const dbFormat = retrievedUserDetails.toDatabase();
+              expect(dbFormat.full_name).toBe(retrievedUserDetails.fullName);
+              expect(dbFormat.email).toBe(retrievedUserDetails.email);
+              expect(dbFormat.phone).toBe(retrievedUserDetails.phone);
+            }
+            
+            await userDetailsService.delete(storedRecord.id);
+          }
+        ),
+        { 
+          numRuns: 100,
+          timeout: 30000,
+          verbose: true
+        }
+      );
+    }, 60000);
+
+    it('should handle edge cases in data persistence', async () => {
+      await fc.assert(
+        fc.asyncProperty(
+          fc.record({
+            fullName: fc.oneof(
+              fc.constant('A'),
+              fc.constant('Jean-Claude Van Damme'),
+              fc.constant("O'Connor"),
+              fc.constant('Dr. Smith Jr.')
+            ),
+            email: fc.oneof(
+              fc.constant(`test-property-edge-${Date.now()}@example.com`),
+              fc.constant(`test-property-edge-${Date.now()}@sub.domain.co.uk`)
+            ),
+            phone: fc.oneof(
+              fc.constant('+1234567890'),
+              fc.constant('1234567890')
+            ),
+            company: fc.option(
+              fc.oneof(
+                fc.constant(''),
+                fc.constant('A'),
+                fc.constant('Test Company')
+              ),
+              { nil: null }
+            ),
+            specialRequirements: fc.option(
+              fc.oneof(
+                fc.constant(''),
+                fc.constant('Wheelchair access needed.')
+              ),
+              { nil: null }
+            )
+          }),
+          async (userData: any) => {
+            try {
+              const originalUserDetails = new UserDetails(userData);
+              
+              const validation = originalUserDetails.validate();
+              if (!validation.isValid) {
+                return;
+              }
+
+              const storedRecord = await userDetailsService.create(originalUserDetails);
+              const retrievedUserDetails = await userDetailsService.findById(storedRecord.id);
+              
+              expect(retrievedUserDetails).not.toBeNull();
+              
+              if (retrievedUserDetails) {
+                expect(retrievedUserDetails.fullName).toBe(originalUserDetails.fullName);
+                expect(retrievedUserDetails.email).toBe(originalUserDetails.email.toLowerCase());
+                expect(retrievedUserDetails.phone).toBe(originalUserDetails.phone);
+                
+                const dbFormat = retrievedUserDetails.toDatabase();
+                expect(typeof dbFormat.full_name).toBe('string');
+                expect(typeof dbFormat.email).toBe('string');
+                expect(typeof dbFormat.phone).toBe('string');
+              }
+              
+              await userDetailsService.delete(storedRecord.id);
+            } catch (error) {
+              if (error instanceof Error && error.message.includes('Invalid user details')) {
+                return;
+              }
+              throw error;
+            }
+          }
+        ),
+        { 
+          numRuns: 50,
+          timeout: 30000,
+          verbose: true
+        }
+      );
+    }, 60000);
+  });
+});

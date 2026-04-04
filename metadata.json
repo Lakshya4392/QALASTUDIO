@@ -1,0 +1,7 @@
+{
+  "name": "Pier59 Studios - Visionary Creativity",
+  "description": "A high-end, minimalist studio platform featuring professional production services, event spaces, and AI-powered creative consultancy.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}

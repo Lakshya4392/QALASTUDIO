@@ -1,0 +1,282 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Studio Management
+model Studio {
+  id                    String   @id @default(cuid())
+  slug                  String   @unique
+  name                  String
+  tagline               String?
+  description           String?
+  price                 String?
+  price_note            String?
+  image_url             String?
+  is_active             Boolean  @default(true)
+  order                 Int      @default(0)
+  min_booking_duration_minutes Int @default(60)
+  max_booking_duration_hours   Int @default(8)
+  created_at            DateTime @default(now())
+  updated_at            DateTime @updatedAt
+
+  // Relations
+  availability_rules    AvailabilityRule[]
+  blackout_periods      BlackoutPeriod[]
+  bookings              Booking[]
+  booking_locks         BookingLock[]
+
+  @@index([slug])
+  @@index([is_active])
+}
+
+model AvailabilityRule {
+  id            String   @id @default(cuid())
+  studio_id     String
+  day_of_week   Int      // 0-6 (Sunday=0)
+  start_time    String   // "09:00"
+  end_time      String   // "18:00"
+  is_active     Boolean  @default(true)
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  studio        Studio   @relation(fields: [studio_id], references: [id], onDelete: Cascade)
+
+  @@unique([studio_id, day_of_week])
+  @@index([studio_id])
+}
+
+model BlackoutPeriod {
+  id              String   @id @default(cuid())
+  studio_id       String
+  start_datetime  DateTime
+  end_datetime    DateTime
+  reason          String?
+  created_at      DateTime @default(now())
+
+  studio          Studio   @relation(fields: [studio_id], references: [id], onDelete: Cascade)
+
+  @@index([studio_id])
+  @@index([start_datetime, end_datetime])
+}
+
+// Booking System
+model Booking {
+  id                  String            @id @default(cuid())
+  studio_id           String
+  user_id             String?           // Optional for non-authenticated users
+  user_details_id     String
+  status              BookingStatus     @default(PENDING)
+  start_datetime      DateTime
+  end_datetime        DateTime
+  timezone            String            @default("UTC")
+  total_price         Decimal           @default(0)
+  pricing_snapshot    Json?             // Store pricing breakdown
+  confirmation_code   String?           @unique
+  email_status        EmailStatus       @default(PENDING)
+  email_sent_at       DateTime?
+  email_message_id    String?
+  created_at          DateTime          @default(now())
+  updated_at          DateTime          @updatedAt
+
+  studio              Studio            @relation(fields: [studio_id], references: [id])
+  user_details        UserDetails       @relation(fields: [user_details_id], references: [id])
+  payments            Payment[]
+  booking_metadata    BookingMetadata[]
+
+  @@index([studio_id])
+  @@index([user_id])
+  @@index([status])
+  @@index([start_datetime, end_datetime])
+  @@index([confirmation_code])
+}
+
+model BookingMetadata {
+  id          String   @id @default(cuid())
+  booking_id  String
+  key         String
+  value       String
+  created_at  DateTime @default(now())
+
+  booking     Booking  @relation(fields: [booking_id], references: [id], onDelete: Cascade)
+
+  @@unique([booking_id, key])
+  @@index([booking_id])
+}
+
+model BookingLock {
+  id              String   @id @default(cuid())
+  lock_token       String   @unique
+  studio_id       String
+  start_datetime  DateTime
+  end_datetime    DateTime
+  expires_at      DateTime
+  created_at      DateTime @default(now())
+
+  studio          Studio   @relation(fields: [studio_id], references: [id], onDelete: Cascade)
+
+  @@index([lock_token])
+  @@index([studio_id])
+  @@index([expires_at])
+}
+
+// User Details (For non-auth bookings)
+model UserDetails {
+  id                  String   @id @default(cuid())
+  full_name           String
+  email               String
+  phone               String
+  company             String?
+  special_requirements String?
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
+
+  bookings            Booking[]
+
+  @@index([email])
+  @@index([phone])
+}
+
+model Payment {
+  id                String            @id @default(cuid())
+  booking_id        String
+  provider          String            // "stripe", "razorpay", etc.
+  status            PaymentStatus     @default(PENDING)
+  amount            Decimal
+  currency          String            @default("INR")
+  provider_ref      String?           @unique // Payment provider's reference ID
+  created_at        DateTime          @default(now())
+  updated_at        DateTime          @updatedAt
+
+  booking           Booking           @relation(fields: [booking_id], references: [id], onDelete: Cascade)
+
+  @@index([booking_id])
+  @@index([provider_ref])
+}
+
+model EmailLog {
+  id                String            @id @default(cuid())
+  booking_id        String
+  type              EmailType         // "confirmation", "reminder", "cancellation"
+  status            EmailStatus       @default(PENDING)
+  provider          String?           // "resend", "nodemailer", etc.
+  message_id        String?           @unique
+  error             String?
+  retry_count       Int               @default(0)
+  last_attempt_at   DateTime?
+  created_at        DateTime          @default(now())
+
+  booking           Booking           @relation(fields: [booking_id], references: [id], onDelete: Cascade)
+
+  @@index([booking_id])
+  @@index([status])
+}
+
+// Enquiries
+model Enquiry {
+  id                String            @id @default(cuid())
+  name              String
+  email             String
+  phone             String
+  subject           String
+  message           String
+  status            EnquiryStatus     @default(NEW)
+  source            String?           // "website", "instagram", etc.
+  ip_address        String?
+  user_agent        String?
+  submitted_at      DateTime          @default(now())
+  updated_at        DateTime          @updatedAt
+
+  @@index([email])
+  @@index([status])
+  @@index([submitted_at])
+}
+
+// Content Management
+model Content {
+  id          String   @id @default(cuid())
+  type        ContentType // "hero", "about", "contact", "services"
+  data        Json     // JSON content data
+  version     Int      @default(1)
+  is_active   Boolean  @default(true)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  @@unique([type, is_active])
+  @@index([type])
+}
+
+// Admin Users (for admin panel)
+model AdminUser {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  email        String   @unique
+  password_hash String
+  role         AdminRole @default(ADMIN)
+  is_active    Boolean  @default(true)
+  last_login   DateTime?
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  @@index([username])
+  @@index([email])
+}
+
+// Enums
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum EmailStatus {
+  PENDING
+  SENT
+  DELIVERED
+  FAILED
+  BOUNCED
+}
+
+enum EmailType {
+  CONFIRMATION
+  REMINDER
+  CANCELLATION
+  FOLLOW_UP
+}
+
+enum EnquiryStatus {
+  NEW
+  READ
+  REPLIED
+  CLOSED
+  SPAM
+}
+
+enum ContentType {
+  HERO
+  ABOUT
+  CONTACT
+  SERVICES
+  FOOTER
+  SEo
+}
+
+enum AdminRole {
+  SUPER_ADMIN
+  ADMIN
+  EDITOR
+  VIEWER
+}

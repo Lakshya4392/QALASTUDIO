@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: qala-studios-backend
+    runtime: node
+    buildCommand: npm run render-build
+    startCommand: npm start
+    plan: free # or starter
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        fromConfig: DATABASE_URL
+      - key: FRONTEND_URL
+        fromConfig: FRONTEND_URL # Add your Vercel URL here after deployment
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CLOUDINARY_URL
+        sync: false # Set manually in Render dashboard
+      - key: ZOHO_EMAIL
+        sync: false
+      - key: ZOHO_PASSWORD
+        sync: false

@@ -1,0 +1,19 @@
+{
+  "name": "qala-studios-video-enhanced",
+  "version": "1.0.0",
+  "description": "Enhanced Qala Studios promotional video with 3D effects",
+  "main": "index.js",
+  "scripts": {
+    "start": "remotion studio src/Root.tsx",
+    "build": "remotion render src/Root.tsx QalaStudiosEnhanced --output=./qala-studios-enhanced.mp4",
+    "preview": "remotion preview src/Root.tsx"
+  },
+  "keywords": ["remotion", "video", "3d"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@remotion/three": "^4.0.443",
+    "remotion": "^4.0.443",
+    "three": "^0.183.2"
+  }
+}

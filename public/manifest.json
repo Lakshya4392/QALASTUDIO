@@ -1,0 +1,20 @@
+{
+  "name": "Qala Studios - Creative Production Space",
+  "short_name": "Qala Studios",
+  "description": "State-of-the-art production studio offering premium studio spaces, cutting-edge technology, and expert support for photography, videography, and creative projects.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#000000",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ],
+  "categories": ["business", "photography", "entertainment"],
+  "lang": "en",
+  "dir": "ltr"
+}

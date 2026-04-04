@@ -1,0 +1,21 @@
+{
+  "name": "qala-studios-video",
+  "version": "1.0.0",
+  "description": "Qala Studios promotional video created with Remotion",
+  "main": "index.js",
+  "scripts": {
+    "start": "remotion studio src/Root.tsx",
+    "build": "remotion render src/Root.tsx",
+    "preview": "remotion preview src/Root.tsx"
+  },
+  "keywords": [
+    "remotion",
+    "video"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@remotion/cli": "^4.0.443",
+    "remotion": "^4.0.443"
+  }
+}

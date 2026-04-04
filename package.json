@@ -1,0 +1,30 @@
+{
+  "name": "pier59-studios---visionary-creativity",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "build:analyze": "BUILD_ANALYZE=true vite build",
+    "preview": "vite preview",
+    "analyze": "npm run build:analyze && echo 'Bundle analysis generated at dist/bundle-analysis.html'"
+  },
+  "dependencies": {
+    "@google/genai": "^1.38.0",
+    "@types/react": "^18.3.28",
+    "@types/react-dom": "^18.3.7",
+    "lucide-react": "^1.7.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-helmet-async": "^3.0.0",
+    "react-router-dom": "^7.13.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "rollup-plugin-visualizer": "^7.0.1",
+    "typescript": "~5.8.2",
+    "vite": "^6.2.0"
+  }
+}
