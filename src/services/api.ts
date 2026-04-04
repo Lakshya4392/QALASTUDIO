@@ -3,7 +3,7 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 // Helper to get auth token
 const getToken = () => localStorage.getItem('admin_token');
 
-// Helper for API calls
+// Helper for API calls - cookies are used automatically, but we still support Authorization header
 const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
   const token = getToken();
   const headers = {
@@ -15,6 +15,7 @@ const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
   const response = await fetch(`${API_BASE}${url}`, {
     ...options,
     headers,
+    credentials: 'include', // ← Send cookies automatically
   });
 
   if (!response.ok) {
@@ -33,20 +34,24 @@ export const api = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),
+        credentials: 'include', // ← Include cookies
       });
       return res.json();
     },
-    verify: async (token: string) => {
+    verify: async () => {
+      // No token needed - backend reads from cookie
       const res = await fetch(`${API_BASE}/auth/verify`, {
-        headers: { Authorization: `Bearer ${token}` },
+        method: 'POST',
+        credentials: 'include',
       });
       return res.json();
     },
     logout: async () => {
-      // Token is stateless, just clear local storage
-      localStorage.removeItem('admin_token');
-      localStorage.removeItem('admin_user');
-      return { success: true };
+      const res = await fetch(`${API_BASE}/auth/logout`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      return res.json();
     },
   },
 

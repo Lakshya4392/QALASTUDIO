@@ -121,7 +121,7 @@ router.post('/login', async (req: Request, res: Response) => {
     res.cookie('auth_token', token, {
       httpOnly: true,
       secure: isProduction,
-      sameSite: 'strict' as const,
+      sameSite: isProduction ? 'none' : 'lax', // 'none' for cross-origin in production
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days (match JWT expiry)
       path: '/',
     });
@@ -231,10 +231,11 @@ router.post('/verify', async (req: Request, res: Response) => {
  */
 router.post('/logout', (_req: Request, res: Response) => {
   // Clear the auth cookie
+  const isProduction = process.env.NODE_ENV === 'production';
   res.clearCookie('auth_token', {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax',
     path: '/',
   });
 

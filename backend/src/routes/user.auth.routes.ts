@@ -94,7 +94,7 @@ router.post('/register', async (req: Request, res: Response) => {
     res.cookie('user_token', token, {
       httpOnly: true,
       secure: isProduction,
-      sameSite: 'strict' as const,
+      sameSite: isProduction ? 'none' : 'lax' as const,
       maxAge: 7 * 24 * 60 * 60 * 1000,
       path: '/',
     });
@@ -165,7 +165,7 @@ router.post('/login', async (req: Request, res: Response) => {
     res.cookie('user_token', token, {
       httpOnly: true,
       secure: isProduction,
-      sameSite: 'strict' as const,
+      sameSite: isProduction ? 'none' : 'lax' as const,
       maxAge: 7 * 24 * 60 * 60 * 1000,
       path: '/',
     });
@@ -194,10 +194,11 @@ router.post('/login', async (req: Request, res: Response) => {
  *       200: { description: Logged out }
  */
 router.post('/logout', (_req: Request, res: Response) => {
+  const isProduction = process.env.NODE_ENV === 'production';
   res.clearCookie('user_token', {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax',
     path: '/',
   });
   return res.json({ success: true, message: 'Logged out' });

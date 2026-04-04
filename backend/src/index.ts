@@ -57,17 +57,20 @@ try {
 
 const app = express();
 
+// Trust proxy for rate limiting (Render uses proxy)
+app.set('trust proxy', 1);
+
 // ============ SECURITY MIDDLEWARE ============
 
 // 1. Helmet - sets various HTTP headers for security
 app.use(helmet({
   contentSecurityPolicy: process.env.NODE_ENV === 'production' ? {
     directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
-      imgSrc: ["'self'", "data:", "https://images.unsplash.com", "https://res.cloudinary.com"],
+      defaultSrc: ["self"],
+      styleSrc: ["self", "unsafe-inline", "https://fonts.googleapis.com"],
+      fontSrc: ["self", "https://fonts.gstatic.com"],
+      scriptSrc: ["self", "unsafe-inline"],
+      imgSrc: ["self", "data:", "https://images.unsplash.com", "https://res.cloudinary.com"],
     },
   } : false,
   hsts: {
