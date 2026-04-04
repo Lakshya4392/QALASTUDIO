@@ -156,7 +156,7 @@ If you see errors, check:
 
 | Key | Value |
 |-----|-------|
-| `VITE_API_URL` | `https://your-backend.onrender.com/api` (after backend is deployed) |
+| `VITE_API_URL` | `https://qalastudio.onrender.com/api` (your Render backend URL) |
 | `VITE_GA_TRACKING_ID` | `G-XXXXXXXXXX` (optional, for Google Analytics) |
 
 3. Click "Deploy"

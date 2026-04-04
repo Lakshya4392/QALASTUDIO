@@ -35,7 +35,7 @@ git push -u origin main
 - Import your repo
 - Root: `Qala Studios`
 - Build: `npm run build`
-- Set `VITE_API_URL` to your Render backend URL
+- Set `VITE_API_URL` to `https://qalastudio.onrender.com/api`
 - Deploy
 
 #### 4. Update Backend FRONTEND_URL
@@ -64,7 +64,7 @@ ADMIN_EMAIL = admin@yourdomain.com
 
 ### Vercel (Frontend)
 ```
-VITE_API_URL = https://your-backend.onrender.com/api
+VITE_API_URL = https://qalastudio.onrender.com/api
 VITE_GA_TRACKING_ID = G-XXXXXX (optional)
 ```
 
@@ -72,8 +72,8 @@ VITE_GA_TRACKING_ID = G-XXXXXX (optional)
 
 ## 🔍 Testing After Deploy
 
-1. **Check Backend Health**: `https://your-backend.onrender.com/api/health`
-2. **Check API Docs**: `https://your-backend.onrender.com/api-docs`
+1. **Check Backend Health**: `https://qalastudio.onrender.com/api/health`
+2. **Check API Docs**: `https://qalastudio.onrender.com/api-docs`
 3. **Test Frontend**: Visit your Vercel URL
 4. **Test Booking**: Try booking a studio
 5. **Admin Login**: `https://your-vercel-url/admin/login`
