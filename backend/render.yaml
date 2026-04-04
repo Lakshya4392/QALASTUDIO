@@ -16,9 +16,21 @@ services:
         fromConfig: FRONTEND_URL # Add your Vercel URL here after deployment
       - key: JWT_SECRET
         generateValue: true
-      - key: CLOUDINARY_URL
-        sync: false # Set manually in Render dashboard
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
       - key: ZOHO_EMAIL
         sync: false
-      - key: ZOHO_PASSWORD
+      - key: ZOHO_APP_PASSWORD
         sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: JWT_EXPIRES_IN
+        value: "7d"
