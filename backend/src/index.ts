@@ -506,6 +506,7 @@ export default app;
 
 // Import and start lock cleanup job
 import { startLockCleanupJob } from './utils/lockCleanup';
+import { startCacheCleanup } from './middleware/cache.middleware';
 import prisma from './config/db';
 
 let cleanupJobTimer: NodeJS.Timeout | null = null;
@@ -516,6 +517,7 @@ app.listen(PORT, () => {
   console.log(`📊 Frontend should be at http://localhost:5173`);
   try {
     cleanupJobTimer = startLockCleanupJob();
+    startCacheCleanup();
     logger.info('Server started successfully', { port: PORT, environment: process.env.NODE_ENV });
   } catch (error) {
     console.error('Failed to start cleanup job:', error);

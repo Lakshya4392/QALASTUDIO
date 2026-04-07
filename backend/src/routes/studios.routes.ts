@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import prisma from '../config/db';
 import { PricingService } from '../domains/pricing/pricing.service';
 import { authenticateToken } from '../middleware/auth.middleware';
+import { cacheMiddleware, invalidateCache } from '../middleware/cache.middleware';
 
 const router = Router();
 
@@ -46,7 +47,7 @@ const router = Router();
  *                     type: integer
  *     security: []
  */
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', cacheMiddleware(60), async (req: Request, res: Response) => {
   try {
     const activeParam = req.query.active;
     const active = activeParam === 'true';
@@ -100,7 +101,7 @@ router.get('/', async (req: Request, res: Response) => {
  *         description: Studio not found
  *     security: []
  */
-router.get('/:id', async (req: Request, res: Response) => {
+router.get('/:id', cacheMiddleware(60), async (req: Request, res: Response) => {
   try {
     const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id as string;
     const studio = await prisma.studio.findUnique({
@@ -199,6 +200,9 @@ router.post('/', authenticateToken, async (req: Request, res: Response) => {
       }
     });
 
+    invalidateCache('/api/studios');
+    invalidateCache('/api/studios/');
+
     return res.json({ success: true, studio });
   } catch (error) {
     console.error('Error creating studio:', error);
@@ -294,6 +298,9 @@ router.put('/:id', authenticateToken, async (req: Request, res: Response) => {
       }
     }
 
+    invalidateCache('/api/studios');
+    invalidateCache('/api/studios/');
+
     return res.json({ success: true, studio });
   } catch (error) {
     console.error('Error updating studio:', error);
@@ -328,6 +335,9 @@ router.delete('/:id', authenticateToken, async (req: Request, res: Response) => 
     await prisma.studio.delete({
       where: { id }
     });
+
+    invalidateCache('/api/studios');
+    invalidateCache('/api/studios/');
 
     return res.json({ success: true, message: 'Studio deleted' });
   } catch (error) {
@@ -372,6 +382,9 @@ router.post('/:id/toggle', authenticateToken, async (req: Request, res: Response
       where: { id },
       data: { is_active: !studio.is_active }
     });
+
+    invalidateCache('/api/studios');
+    invalidateCache('/api/studios/');
 
     return res.json({ success: true, studio: updated });
   } catch (error) {

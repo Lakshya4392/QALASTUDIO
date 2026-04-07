@@ -5,6 +5,7 @@ services:
     buildCommand: npm run render-build
     startCommand: npm start
     plan: free
+    healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production

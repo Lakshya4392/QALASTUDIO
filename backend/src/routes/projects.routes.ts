@@ -1,11 +1,12 @@
 import { Router, Request, Response } from 'express';
 import prisma from '../config/db';
 import { authenticateToken } from '../middleware/auth.middleware';
+import { cacheMiddleware, invalidateCache } from '../middleware/cache.middleware';
 
 const router = Router();
 
 // Get all projects
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', cacheMiddleware(60), async (req: Request, res: Response) => {
   try {
     const activeParam = req.query.active;
     const active = activeParam === 'true';
@@ -39,6 +40,9 @@ router.post('/', authenticateToken, async (req: Request, res: Response) => {
       }
     });
 
+    invalidateCache('/api/projects');
+    invalidateCache('/api/projects/');
+
     return res.json({ success: true, project });
   } catch (error) {
     console.error('Error creating project:', error);
@@ -63,6 +67,9 @@ router.put('/:id', authenticateToken, async (req: Request, res: Response) => {
       }
     });
 
+    invalidateCache('/api/projects');
+    invalidateCache('/api/projects/');
+
     return res.json({ success: true, project });
   } catch (error) {
     console.error('Error updating project:', error);
@@ -77,6 +84,9 @@ router.delete('/:id', authenticateToken, async (req: Request, res: Response) => 
     await prisma.project.delete({
       where: { id: String(id) }
     });
+
+    invalidateCache('/api/projects');
+    invalidateCache('/api/projects/');
 
     return res.json({ success: true, message: 'Project deleted' });
   } catch (error) {
@@ -101,6 +111,9 @@ router.post('/:id/toggle', authenticateToken, async (req: Request, res: Response
       where: { id: String(id) },
       data: { is_active: !project.is_active }
     });
+
+    invalidateCache('/api/projects');
+    invalidateCache('/api/projects/');
 
     return res.json({ success: true, project: updated });
   } catch (error) {

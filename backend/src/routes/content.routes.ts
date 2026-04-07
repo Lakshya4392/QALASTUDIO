@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import prisma from '../config/db';
 import { authenticateToken } from '../middleware/auth.middleware';
+import { cacheMiddleware, invalidateCache } from '../middleware/cache.middleware';
 
 const router = Router();
 
@@ -19,7 +20,7 @@ const router = Router();
  *       401:
  *         description: Unauthorized
  */
-router.get('/', async (_req: Request, res: Response) => {
+router.get('/', cacheMiddleware(120), async (_req: Request, res: Response) => {
   try {
     const contents = await prisma.content.findMany({
       where: { is_active: true },
@@ -56,7 +57,7 @@ router.get('/', async (_req: Request, res: Response) => {
  *       401:
  *         description: Unauthorized
  */
-router.get('/:type', async (req: Request, res: Response) => {
+router.get('/:type', cacheMiddleware(120), async (req: Request, res: Response) => {
   try {
     const typeRaw = req.params.type;
     const type = Array.isArray(typeRaw) ? typeRaw[0] : typeRaw as string;
@@ -69,8 +70,6 @@ router.get('/:type', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Content not found' });
     }
 
-    // No caching — always return fresh data
-    res.setHeader('Cache-Control', 'no-store');
     return res.json(content);
   } catch (error) {
     console.error('Error fetching content:', error);
@@ -126,8 +125,9 @@ router.put('/:type', authenticateToken, async (req: Request, res: Response) => {
     const contentType = type.toUpperCase();
 
     // Try upsert with composite unique
+    let content;
     try {
-      const content = await prisma.content.upsert({
+      content = await prisma.content.upsert({
         where: {
           type_is_active: {
             type: contentType as any,
@@ -145,20 +145,18 @@ router.put('/:type', authenticateToken, async (req: Request, res: Response) => {
           version: 1
         }
       });
-      return res.json({ success: true, content });
-    } catch (upsertError) {
+    } catch (_upsertError) {
       const existing = await prisma.content.findFirst({
         where: { type: contentType as any, is_active: true }
       });
 
       if (existing) {
-        const updated = await prisma.content.update({
+        content = await prisma.content.update({
           where: { id: existing.id },
           data: { data: actualData, updated_at: new Date() }
         });
-        return res.json({ success: true, content: updated });
       } else {
-        const created = await prisma.content.create({
+        content = await prisma.content.create({
           data: {
             type: contentType as any,
             data: actualData,
@@ -166,9 +164,14 @@ router.put('/:type', authenticateToken, async (req: Request, res: Response) => {
             version: 1
           }
         });
-        return res.json({ success: true, content: created });
       }
     }
+
+    // Invalidate content cache after update
+    invalidateCache('/api/content');
+    invalidateCache('/api/content/');
+
+    return res.json({ success: true, content });
   } catch (error) {
     console.error('Error updating content:', error);
     return res.status(500).json({ error: 'Failed to update content' });
