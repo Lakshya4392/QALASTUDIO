@@ -25,45 +25,32 @@ const ServiceGrid: React.FC = () => {
         </div>
 
         {/* Services Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-12 gap-y-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-5">
           {services.map((service, idx) => (
             <FadeInSection key={service.id} delay={idx * 100} className="group">
-              <article className="flex flex-col h-full bg-white border-2 border-neutral-200 rounded-3xl overflow-hidden hover:border-black transition-all duration-500 hover:shadow-2xl">
-                {/* Image Container */}
-                <div className="relative aspect-[16/10] overflow-hidden bg-neutral-100">
+              <article className="relative aspect-[4/5] overflow-hidden cursor-pointer">
+                {/* Full-bleed Image */}
+                <div className="absolute inset-0 bg-neutral-100">
                   {service.img ? (
                     <img
                       src={service.img}
                       alt={service.name}
-                      className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110 bg-neutral-100"
+                      className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
                       loading="lazy"
                     />
                   ) : (
                     <div className="w-full h-full bg-neutral-50" />
                   )}
-                  {/* Category Badge on Image */}
-                  <div className="absolute top-4 left-4">
-                    <span className="inline-block px-3 py-1.5 bg-white/95 backdrop-blur-sm text-[8px] font-black uppercase tracking-widest text-black border border-black/10 rounded-full shadow-sm">
-                      {service.category || 'Service'}
-                    </span>
-                  </div>
                 </div>
 
-                {/* Content */}
-                <div className="flex-1 p-6 flex flex-col">
-                  <h3 className="text-2xl md:text-3xl font-['Oswald'] font-bold uppercase tracking-tight mb-4 group-hover:translate-x-2 transition-transform duration-300 leading-none">
+                {/* Subtle cinematic overlay */}
+                <div className="absolute inset-0 bg-black/15 transition-colors duration-500 ease-out group-hover:bg-black/30" />
+
+                {/* Centered title */}
+                <div className="absolute inset-0 flex items-center justify-center px-6 text-center">
+                  <h3 className="font-sans text-white text-2xl md:text-3xl font-medium tracking-tight transition-all duration-300 ease-out group-hover:opacity-100">
                     {service.name || 'Untitled Service'}
                   </h3>
-
-                  {/* Enquire Button */}
-                  <div className="mt-auto pt-4">
-                    <button className="w-full py-3 border-2 border-black bg-black text-white text-[10px] font-black uppercase tracking-[0.2em] hover:bg-neutral-900 hover:glow transition-all duration-300 flex items-center justify-center gap-2 group/btn">
-                      <span>VIEW DETAILS</span>
-                      <svg className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                      </svg>
-                    </button>
-                  </div>
                 </div>
               </article>
             </FadeInSection>

@@ -39,7 +39,7 @@
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=Inter:wght@300;400;500;600&family=Montserrat:wght@300;400;500;600;700;800;900&family=Oswald:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=Inter:wght@300;400;500;600&family=Montserrat:wght@300;400;500;600;700;800;900&family=Oswald:wght@200;300;400;500;600;700&family=Lora:ital,wght@0,400;1,400&family=Dancing+Script:wght@400;700&display=swap" rel="stylesheet">
     <style>
       body {
         font-family: 'Inter', sans-serif;
@@ -53,6 +53,9 @@
       .font-sans { font-family: 'Inter', sans-serif; }
       .font-display { font-family: 'Montserrat', sans-serif; }
       .font-serif { font-family: 'Cormorant Garamond', serif; }
+      .font-montserrat { font-family: 'Montserrat', sans-serif; }
+      .font-lora { font-family: 'Lora', serif; }
+      .font-handwritten { font-family: 'Dancing Script', cursive; }
 
       .text-hero {
         font-family: 'Montserrat', sans-serif;
@@ -138,6 +141,12 @@
 
       @media (min-width: 768px) {
         .container-standard { padding: 0 4rem; }
+      }
+
+      /* Feathered edge mask for image bottoms */
+      .image-mask-feather {
+        mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+        -webkit-mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
       }
     </style>
 </head>

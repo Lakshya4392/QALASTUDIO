@@ -1,48 +1,60 @@
 import React from 'react';
-import FadeInSection from './FadeInSection';
 import { useContent } from '../contexts/ContentContext';
 
 const Footer: React.FC = () => {
   const { content } = useContent();
   const c = content.contact;
-  // Guard against missing nested socialLinks object
   const social = c.socialLinks || { instagram: '', twitter: '', linkedin: '' };
+
+  const socialItems = [
+    { label: 'Instagram', href: social.instagram || '#' },
+    { label: 'X', href: social.twitter || '#' },
+    { label: 'TikTok', href: '#' },
+    { label: 'Facebook', href: social.linkedin || '#' },
+  ];
+
   return (
-    <footer className="bg-black text-white pt-40 pb-20 px-6 md:px-16 overflow-hidden relative">
-      <div className="absolute top-0 right-0 w-[50vw] h-[50vw] bg-white/[0.02] rounded-full blur-[120px] -translate-y-1/2 translate-x-1/3" />
-      <div className="relative z-10">
-        <div className="mb-40 group cursor-pointer inline-block">
-          <FadeInSection>
-            <span className="text-[10px] font-bold uppercase tracking-[0.5em] text-neutral-500 block mb-8">PREMIER PRODUCTION FACILITY</span>
-            <h2 className="text-[12vw] md:text-[15vw] font-['Oswald'] font-bold leading-[0.8] uppercase tracking-tighter hover:italic transition-all duration-700">QALA <br className="md:hidden" /> STUDIOS</h2>
-          </FadeInSection>
-        </div>
-        <div className="grid md:grid-cols-3 gap-20 border-t border-white/10 pt-20">
-          <div className="space-y-8">
-            <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-neutral-500">Contact</span>
-            <div className="space-y-4">
-              <a href={`mailto:${c.email}`} className="block text-2xl md:text-3xl font-light hover:opacity-50 transition-opacity">{c.email}</a>
-              <p className="text-2xl md:text-3xl font-light">{c.phone}</p>
+    <footer className="bg-[#f6f6f6] text-black border-t border-black/10 relative overflow-hidden">
+      <div className="relative z-10 px-6 md:px-16 pt-20 md:pt-24 pb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-14">
+          <div>
+            <h3 className="text-4xl md:text-5xl font-['Oswald'] font-bold uppercase tracking-tight mb-4">QALA STUDIOS</h3>
+            <p className="text-[11px] uppercase tracking-[0.2em] text-black/55 font-semibold">
+              JLPL Industrial Area, Sector 82, Mohali
+            </p>
+          </div>
+
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.22em] text-black/45 font-bold mb-4">Contact</p>
+            <div className="space-y-2">
+              <a href={`mailto:${c.email}`} className="block text-3xl md:text-4xl font-['Oswald'] font-bold tracking-tight hover:opacity-60 transition-opacity">{c.email}</a>
+              <a href={`tel:${c.phone}`} className="block text-3xl md:text-4xl font-['Oswald'] font-bold tracking-tight hover:opacity-60 transition-opacity">{c.phone}</a>
+            </div>
+            <p className="mt-6 text-[13px] leading-relaxed text-black/70 max-w-sm">{c.address}</p>
+          </div>
+
+          <div className="md:text-right">
+            <p className="text-[10px] uppercase tracking-[0.22em] text-black/45 font-bold mb-4">Socials</p>
+            <div className="flex md:justify-end gap-5 md:gap-6">
+              {socialItems.map(item => (
+                <a
+                  key={item.label}
+                  href={item.href}
+                  target={item.href !== '#' ? '_blank' : undefined}
+                  rel={item.href !== '#' ? 'noreferrer' : undefined}
+                  className="text-[11px] uppercase tracking-wider font-bold hover:opacity-60 transition-opacity"
+                >
+                  {item.label}
+                </a>
+              ))}
             </div>
           </div>
-          <div className="space-y-8">
-            <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-neutral-500">Social</span>
-            <div className="flex flex-wrap gap-x-10 gap-y-4">
-              {social.instagram && <a href={social.instagram} target="_blank" rel="noreferrer" className="text-lg uppercase tracking-widest font-medium hover:line-through transition-all">Instagram</a>}
-              {social.twitter && <a href={social.twitter} target="_blank" rel="noreferrer" className="text-lg uppercase tracking-widest font-medium hover:line-through transition-all">Twitter</a>}
-              {social.linkedin && <a href={social.linkedin} target="_blank" rel="noreferrer" className="text-lg uppercase tracking-widest font-medium hover:line-through transition-all">LinkedIn</a>}
-            </div>
-          </div>
-          <div className="space-y-8">
-            <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-neutral-500">Address</span>
-            <p className="text-xl font-light text-neutral-400 leading-relaxed">{c.address}</p>
-          </div>
         </div>
-        <div className="mt-40 pt-10 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6 opacity-30">
-          <p className="text-[10px] uppercase tracking-widest font-medium">© 2024 Qala Studios. All rights reserved.</p>
-          <div className="flex gap-10 text-[10px] uppercase tracking-widest font-medium">
-            <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
-            <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
+
+        <div className="mt-14 pt-4 border-t border-black/10 flex items-center justify-between">
+          <p className="text-[10px] uppercase tracking-[0.18em] text-black/40 font-bold">© 2024 Qala Studios. All rights reserved.</p>
+          <div className="text-[10px] uppercase tracking-[0.18em] text-black/30 font-bold">
+            Scroll
           </div>
         </div>
       </div>

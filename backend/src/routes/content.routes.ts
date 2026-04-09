@@ -5,6 +5,99 @@ import { cacheMiddleware, invalidateCache } from '../middleware/cache.middleware
 
 const router = Router();
 
+const defaultServicesContent = {
+  headerTitle: 'PRODUCTION SERVICES',
+  headerSubtitle: 'Everything you need from pre-production to wrap.',
+  sections: [
+    {
+      key: 'Equipment',
+      title: 'Equipment Rental',
+      subtitle: '',
+      description:
+        "Qala Studios houses Punjab's most extensive inventory of high-end camera, lighting, and grip equipment. Our on-site department ensures your technical needs are met with precision.",
+      image: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&q=80&w=1200',
+      layout: 'image-left'
+    },
+    {
+      key: 'Digital',
+      title: 'Digital Services',
+      subtitle: '',
+      description:
+        'Capture your vision with our top-tier digital support. We provide calibrated workstations, high-speed data management, and on-site digital technicians for seamless workflow from sensor to server.',
+      image: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&q=80&w=1200',
+      layout: 'image-right'
+    },
+    {
+      key: 'VFX',
+      title: 'VFX Magic',
+      subtitle: 'Where Imagination Meets Reality.',
+      description:
+        'Our in-house VFX experts convert your wildest concepts into pixel-perfect reality, from chroma keying to 3D environment integration.',
+      image: 'https://images.unsplash.com/photo-1594909122845-11baa439b7bf?auto=format&fit=crop&q=80&w=1200',
+      layout: 'image-left'
+    },
+    {
+      key: 'Drone',
+      title: 'Drone Shoot & Aerial Cinematography',
+      subtitle: 'New Heights, New Perspectives.',
+      description:
+        'Capture the bigger picture with certified drone pilots delivering 4K HDR aerial shots and fast-paced FPV maneuvers.',
+      image: 'https://images.unsplash.com/photo-1508444845599-5c89863b1c44?auto=format&fit=crop&q=80&w=1200',
+      layout: 'image-right'
+    },
+    {
+      key: 'Locations',
+      title: 'Location Scouting',
+      subtitle: '',
+      description:
+        'Beyond our dedicated studios, we offer location scouting and production vehicle support for shoots across Punjab.',
+      image: 'https://images.unsplash.com/photo-1502444330042-d1a1ddf9bb5b?auto=format&fit=crop&q=80&w=1200',
+      layout: 'image-left'
+    }
+  ]
+};
+
+const defaultAboutContent = {
+  eyebrow: 'The Minds Behind',
+  headingLine1: 'MEET THE MINDS',
+  headingLine2: 'BEHIND THE MAGIC',
+  members: [
+    {
+      name: 'Mudit Sharma',
+      role: 'THE DRIVING FORCE',
+      quote:
+        "Founder. Visionary. Petrolhead. Mudit doesn't just build studios; he builds ecosystems for creativity. His passion is the fuel that keeps Qala moving forward at 100mph.",
+      image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=1200',
+      ghostName: 'MUDIT',
+      footNote: 'Grew up in garage bands & garage startups',
+      annotations: ["Can't live without!\nHis Car", 'FPV goggles on,\nworld off', 'Builder by day,\nDJ by night']
+    },
+    {
+      name: 'Rishab',
+      role: 'MASTER OF COMPOSITION',
+      quote:
+        "For most, Golden Hour is a time of day; for Rishab, it’s game time. Addicted to cinematic flair and perfect framing, he’s the one who turns a shot into a story.",
+      image: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=1200',
+      ghostName: 'RISHAB',
+      footNote: 'Uses Ctrl+Z more than anything!! • Style: Cinematic',
+      annotations: ['Addicted to\ncomposition', 'Builder mindset', 'Fav time? golden hour']
+    },
+    {
+      name: 'Parth',
+      role: 'THE DOP & STORYTELLER',
+      quote:
+        'Seeing the world through a 16-35mm lens, Parth captures what others miss. He doesn’t just record footage; he crafts visual narratives that breathe life into every frame.',
+      image: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&q=80&w=1200',
+      ghostName: 'PARTH',
+      footNote: 'Shoots in 24fps but thinks 100 ideas per second',
+      annotations: ['Go to lens:\n16-35mm', 'Dream location:\nLadakh', 'Sharp story telling']
+    }
+  ],
+  manifestoHeading: 'QALA IS NOT JUST A SPACE; IT\'S A',
+  manifestoHighlight: 'MOVEMENT',
+  manifestoText: 'We are a team of misfits, artists, and gear-heads united by one goal: Your best shot.'
+};
+
 /**
  * @swagger
  * /content:
@@ -67,6 +160,22 @@ router.get('/:type', cacheMiddleware(120), async (req: Request, res: Response) =
     });
 
     if (!content) {
+      if (contentType === 'SERVICES') {
+        return res.json({
+          id: 'default-services-content',
+          type: 'SERVICES',
+          data: defaultServicesContent,
+          is_active: true
+        });
+      }
+      if (contentType === 'ABOUT') {
+        return res.json({
+          id: 'default-about-content',
+          type: 'ABOUT',
+          data: defaultAboutContent,
+          is_active: true
+        });
+      }
       return res.status(404).json({ error: 'Content not found' });
     }
 

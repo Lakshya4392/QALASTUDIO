@@ -16,7 +16,7 @@ const About: React.FC = () => {
         )}
 
         {a.philosophyText && (
-          <h2 className="text-6xl md:text-8xl lg:text-9xl leading-[0.9] mb-12 max-w-5xl font-['Oswald'] font-bold uppercase tracking-tighter text-black">
+          <h2 className="text-3xl md:text-4xl lg:text-5xl leading-tight mb-10 max-w-4xl font-display font-semibold tracking-tight text-black">
             {a.philosophyText}
           </h2>
         )}

@@ -5,7 +5,7 @@ import ImageUpload from './ImageUpload';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
-type Tab = 'hero' | 'about' | 'contact' | 'services';
+type Tab = 'hero' | 'about' | 'contact' | 'services' | 'goldenHour';
 
 const F: React.FC<{ label: string; children: React.ReactNode; className?: string }> = ({ label, children, className = '' }) => (
   <div className={className}>
@@ -63,17 +63,33 @@ const AdminContentPage: React.FC = () => {
   const [about, setAbout] = useState({ philosophyTitle: '', philosophyText: '', description: '', quote: '', quoteAuthor: '', image: '' });
   const [contact, setContact] = useState({ email: '', phone: '', address: '', mapUrl: '', socialLinks: { instagram: '', twitter: '', linkedin: '' } });
   const [services, setServices] = useState<Array<{ id: string; name: string; category: string; img: string; isActive: boolean; expanded?: boolean }>>([]);
+  const [goldenHour, setGoldenHour] = useState({
+    sectionTag: '',
+    sectionTitle: '',
+    sectionDescription: '',
+    mapTitle: '',
+    mapDescription: '',
+    btsLabel: '',
+    dimensionsLabel: '',
+    propsLabel: '',
+    availabilityLabel: '',
+    availabilityText: '',
+    primaryCtaLabel: '',
+    secondaryCtaLabel: '',
+    sets: [] as Array<any>,
+  });
   const [uploadedImages, setUploadedImages] = useState<any[]>([]);
 
   useEffect(() => {
     const load = async () => {
       setLoading(true);
       try {
-        const [h, a, c, s] = await Promise.all([
+        const [h, a, c, s, g] = await Promise.all([
           getContent('HERO'),
           getContent('ABOUT'),
           getContent('CONTACT'),
           getContent('SERVICES'),
+          getContent('GOLDEN_HOUR'),
         ]);
         if (h?.data) setHero(prev => ({ ...prev, ...h.data }));
         if (a?.data) setAbout(prev => ({ ...prev, ...a.data }));
@@ -88,6 +104,13 @@ const AdminContentPage: React.FC = () => {
             isActive: sv.is_active ?? true,
             expanded: false,
           })));
+        }
+        if (g?.data) {
+          setGoldenHour(prev => ({
+            ...prev,
+            ...g.data,
+            sets: Array.isArray(g.data.sets) ? g.data.sets.map((set: any) => ({ ...set, expanded: false })) : prev.sets,
+          }));
         }
       } catch (e) {
         console.error('Failed to load content:', e);
@@ -110,6 +133,14 @@ const AdminContentPage: React.FC = () => {
         await updateContent('SERVICES', { services: mapped });
         updateSection('services', mapped);
       }
+      if (t === 'goldenHour') {
+        const payload = {
+          ...goldenHour,
+          sets: goldenHour.sets.map((set: any) => ({ ...set, expanded: undefined })),
+        };
+        await updateContent('GOLDEN_HOUR', payload);
+        updateSection('goldenHour', payload);
+      }
       setSaved(t);
       setTimeout(() => setSaved(null), 3000);
       refresh().catch(() => {});
@@ -125,6 +156,7 @@ const AdminContentPage: React.FC = () => {
     { id: 'about', label: 'ABOUT STORY', icon: Layers },
     { id: 'contact', label: 'CONTACT INFO', icon: Phone },
     { id: 'services', label: 'ALL SERVICES', icon: Sparkles },
+    { id: 'goldenHour', label: 'GOLDEN HOUR', icon: Image },
   ];
 
   if (loading) return (
@@ -309,6 +341,86 @@ const AdminContentPage: React.FC = () => {
                   )}
                 </div>
               ))}
+            </div>
+          )}
+
+          {tab === 'goldenHour' && (
+            <div className="space-y-10 animate-fade-in">
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <F label="Section Tag"><I value={goldenHour.sectionTag} onChange={e => setGoldenHour({ ...goldenHour, sectionTag: e.target.value })} /></F>
+                <F label="Section Title"><I value={goldenHour.sectionTitle} onChange={e => setGoldenHour({ ...goldenHour, sectionTitle: e.target.value })} /></F>
+                <F label="Section Description" className="lg:col-span-3"><T rows={2} value={goldenHour.sectionDescription} onChange={e => setGoldenHour({ ...goldenHour, sectionDescription: e.target.value })} /></F>
+                <F label="Map Title"><I value={goldenHour.mapTitle} onChange={e => setGoldenHour({ ...goldenHour, mapTitle: e.target.value })} /></F>
+                <F label="Map Description"><I value={goldenHour.mapDescription} onChange={e => setGoldenHour({ ...goldenHour, mapDescription: e.target.value })} /></F>
+                <F label="BTS Label"><I value={goldenHour.btsLabel} onChange={e => setGoldenHour({ ...goldenHour, btsLabel: e.target.value })} /></F>
+                <F label="Dimensions Label"><I value={goldenHour.dimensionsLabel} onChange={e => setGoldenHour({ ...goldenHour, dimensionsLabel: e.target.value })} /></F>
+                <F label="Props Label"><I value={goldenHour.propsLabel} onChange={e => setGoldenHour({ ...goldenHour, propsLabel: e.target.value })} /></F>
+                <F label="Availability Label"><I value={goldenHour.availabilityLabel} onChange={e => setGoldenHour({ ...goldenHour, availabilityLabel: e.target.value })} /></F>
+                <F label="Availability Text"><I value={goldenHour.availabilityText} onChange={e => setGoldenHour({ ...goldenHour, availabilityText: e.target.value })} /></F>
+                <F label="Primary CTA"><I value={goldenHour.primaryCtaLabel} onChange={e => setGoldenHour({ ...goldenHour, primaryCtaLabel: e.target.value })} /></F>
+                <F label="Secondary CTA"><I value={goldenHour.secondaryCtaLabel} onChange={e => setGoldenHour({ ...goldenHour, secondaryCtaLabel: e.target.value })} /></F>
+              </div>
+
+              <div className="space-y-6">
+                <h3 className="text-xl font-black uppercase tracking-widest">Sets</h3>
+                {goldenHour.sets.map((set: any, i: number) => (
+                  <div key={set.id || i} className={`group bg-white border-2 rounded-[2rem] transition-all duration-500 overflow-hidden ${set.expanded ? 'border-black shadow-2xl' : 'border-black/10 hover:border-black/30'}`}>
+                    <div className="p-8 cursor-pointer flex items-center gap-8" onClick={() => {
+                      const next = [...goldenHour.sets];
+                      next.forEach((s: any, idx: number) => { next[idx] = { ...s, expanded: idx === i ? !s.expanded : false }; });
+                      setGoldenHour({ ...goldenHour, sets: next });
+                    }}>
+                      <div className="w-24 h-24 bg-black/5 rounded-2xl overflow-hidden border-2 border-black/5 flex-shrink-0">
+                        {set.img ? <img src={set.img} alt={set.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><Image className="w-8 h-8 text-black/20" /></div>}
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-xl font-black uppercase tracking-tight text-neutral-800">{set.name || 'UNNAMED SET'}</h4>
+                        <p className="text-xs font-bold uppercase tracking-[0.2em] text-neutral-400 mt-1">{set.category || 'CATEGORY'} • {set.theme || 'THEME'}</p>
+                      </div>
+                      <div className={`p-4 rounded-full transition-all ${set.expanded ? 'bg-black text-white' : 'bg-black/5 text-black'}`}>
+                        {set.expanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                      </div>
+                    </div>
+
+                    {set.expanded && (
+                      <div className="px-10 pb-10 pt-4 border-t-2 border-black/5 space-y-8 animate-fade-in bg-black/[0.01]">
+                        <div className="grid md:grid-cols-12 gap-8">
+                          <div className="md:col-span-4">
+                            <F label="Set Image">
+                              <ImageUpload value={set.img} onChange={url => {
+                                const next = [...goldenHour.sets];
+                                next[i] = { ...next[i], img: url };
+                                setGoldenHour({ ...goldenHour, sets: next });
+                              }} folder="qala-studios/golden-hour" label="Upload set image" />
+                            </F>
+                          </div>
+                          <div className="md:col-span-8 grid md:grid-cols-2 gap-6">
+                            <F label="Set Name"><I value={set.name || ''} onChange={e => { const next = [...goldenHour.sets]; next[i] = { ...next[i], name: e.target.value }; setGoldenHour({ ...goldenHour, sets: next }); }} /></F>
+                            <F label="Category"><I value={set.category || ''} onChange={e => { const next = [...goldenHour.sets]; next[i] = { ...next[i], category: e.target.value }; setGoldenHour({ ...goldenHour, sets: next }); }} /></F>
+                            <F label="Theme"><I value={set.theme || ''} onChange={e => { const next = [...goldenHour.sets]; next[i] = { ...next[i], theme: e.target.value }; setGoldenHour({ ...goldenHour, sets: next }); }} /></F>
+                            <F label="Dimensions"><I value={set.dimensions || ''} onChange={e => { const next = [...goldenHour.sets]; next[i] = { ...next[i], dimensions: e.target.value }; setGoldenHour({ ...goldenHour, sets: next }); }} /></F>
+                            <F label="BTS Video URL" className="md:col-span-2"><I value={set.btsVideo || ''} onChange={e => { const next = [...goldenHour.sets]; next[i] = { ...next[i], btsVideo: e.target.value }; setGoldenHour({ ...goldenHour, sets: next }); }} /></F>
+                            <F label="Description" className="md:col-span-2"><T rows={3} value={set.description || ''} onChange={e => { const next = [...goldenHour.sets]; next[i] = { ...next[i], description: e.target.value }; setGoldenHour({ ...goldenHour, sets: next }); }} /></F>
+                            <F label="Props (comma separated)" className="md:col-span-2"><I value={Array.isArray(set.props) ? set.props.join(', ') : ''} onChange={e => { const next = [...goldenHour.sets]; next[i] = { ...next[i], props: e.target.value.split(',').map((p: string) => p.trim()).filter(Boolean) }; setGoldenHour({ ...goldenHour, sets: next }); }} /></F>
+                            <F label="Map X"><I type="number" value={set.coords?.x ?? 0} onChange={e => { const next = [...goldenHour.sets]; next[i] = { ...next[i], coords: { ...(next[i].coords || {}), x: Number(e.target.value) } }; setGoldenHour({ ...goldenHour, sets: next }); }} /></F>
+                            <F label="Map Y"><I type="number" value={set.coords?.y ?? 0} onChange={e => { const next = [...goldenHour.sets]; next[i] = { ...next[i], coords: { ...(next[i].coords || {}), y: Number(e.target.value) } }; setGoldenHour({ ...goldenHour, sets: next }); }} /></F>
+                            <F label="Map Width"><I type="number" value={set.coords?.w ?? 0} onChange={e => { const next = [...goldenHour.sets]; next[i] = { ...next[i], coords: { ...(next[i].coords || {}), w: Number(e.target.value) } }; setGoldenHour({ ...goldenHour, sets: next }); }} /></F>
+                            <F label="Map Height"><I type="number" value={set.coords?.h ?? 0} onChange={e => { const next = [...goldenHour.sets]; next[i] = { ...next[i], coords: { ...(next[i].coords || {}), h: Number(e.target.value) } }; setGoldenHour({ ...goldenHour, sets: next }); }} /></F>
+                            <div className="md:col-span-2 pt-2">
+                              <button
+                                onClick={() => { const next = [...goldenHour.sets]; next[i] = { ...next[i], isActive: !(next[i].isActive ?? true) }; setGoldenHour({ ...goldenHour, sets: next }); }}
+                                className={`w-full py-5 rounded-2xl text-[11px] font-black uppercase tracking-widest border-2 transition-all ${(set.isActive ?? true) ? 'bg-black text-white border-black' : 'bg-white text-black/40 border-black/10 hover:border-black/40'}`}
+                              >
+                                {(set.isActive ?? true) ? 'DISABLE FROM WEBSITE' : 'ENABLE ON WEBSITE'}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>

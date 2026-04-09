@@ -1,5 +1,4 @@
 import React, { useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useContent } from '../contexts/ContentContext';
 
 interface HeroProps {
@@ -8,7 +7,6 @@ interface HeroProps {
 
 const Hero: React.FC<HeroProps> = ({ onNavigate }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
   const { content } = useContent();
   const h = content.hero;
 
@@ -60,13 +58,13 @@ const Hero: React.FC<HeroProps> = ({ onNavigate }) => {
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4">
             <button
-              onClick={() => navigate('/studios')}
+              onClick={() => onNavigate('studios')}
               className="px-10 py-4 bg-white text-black text-sm font-bold uppercase tracking-wider hover:bg-gray-100 transition-colors duration-300 w-fit"
             >
               {h.ctaPrimary || 'Explore Studios'}
             </button>
             <button
-              onClick={() => navigate('/services')}
+              onClick={() => onNavigate('services')}
               className="px-10 py-4 border-2 border-white text-white text-sm font-bold uppercase tracking-wider hover:bg-white hover:text-black transition-colors duration-300 w-fit"
             >
               {h.ctaSecondary || 'Our Services'}
