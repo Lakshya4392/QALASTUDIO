@@ -37,6 +37,7 @@ import { emailService } from './services/EmailService';
 // Routes
 import userDetailsRoutes from './routes/userDetails';
 import authRoutes from './routes/auth.routes';
+import frontendAuthRoutes from './routes/frontend.auth.routes';
 import userAuthRoutes from './routes/user.auth.routes';
 import contentRoutes from './routes/content.routes';
 import enquiriesRoutes from './routes/enquiries.routes';
@@ -217,11 +218,14 @@ app.get('/api/health', async (_req: Request, res: Response) => {
 // User Details Routes (public booking, rate limited)
 app.use('/api/user-details', generalRateLimit, userDetailsRoutes);
 
-// User Auth Routes (for customers - no password required for now)
+// User Auth Routes (legacy endpoints kept for compatibility)
 app.use('/api/users', generalRateLimit, userAuthRoutes);
 
-// Admin Auth Routes (rate limited, stricter)
-app.use('/api/auth', authRateLimit, authRoutes);
+// Frontend Auth Routes (Studio frontend expects /api/auth/*)
+app.use('/api/auth', authRateLimit, frontendAuthRoutes);
+
+// Admin Auth Routes (moved to avoid conflicting with frontend auth)
+app.use('/api/admin/auth', authRateLimit, authRoutes);
 
 // --- Admin Routes (PROTECTED - Authentication Required) ---
 

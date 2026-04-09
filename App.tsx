@@ -1,151 +1,149 @@
-import React, { lazy, Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AdminAuthProvider, useAdminAuth } from './contexts/AdminAuthContext';
-import { UserAuthProvider, useUserAuth } from './contexts/UserAuthContext';
+import React, { useEffect, useState } from 'react';
+import { AuthProvider, useAuth } from './services/auth-context';
 import { ContentProvider } from './contexts/ContentContext';
-import ErrorBoundary from './components/ErrorBoundary';
-import GoogleAnalytics from './components/GoogleAnalytics';
+import Navbar from './components/Navbar';
+import Footer from './components/Footer';
+import AIAssistant from './components/AIAssistant';
+import Hero from './components/Hero';
+import About from './components/About';
+import ServiceGrid from './components/ServiceGrid';
+import VirtualProduction from './components/VirtualProduction';
+import Hospitality from './components/Hospitality';
+import EventSpaces from './components/EventSpaces';
+import RecentProductions from './components/RecentProductions';
+import Portfolio from './components/Portfolio';
+import StudiosPage from './pages/StudiosPage';
+import ServicesPage from './pages/ServicesPage';
+import ContactPage from './pages/ContactPage';
+import GoldenHourPage from './pages/GoldenHourPage';
+import AboutPage from './pages/AboutPage';
+import BookPage from './pages/BookPage';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import UserDashboardPage from './pages/UserDashboardPage';
+import AdminDashboardPage from './pages/AdminDashboardPage';
 
-// Main Website Components (with Navbar/Footer) - Lazy loaded for code splitting
-const MainLayout = lazy(() => import('./components/MainLayout'));
-const HomePage = lazy(() => import('./pages/HomePage'));
-const StudiosPage = lazy(() => import('./pages/StudiosPage'));
-const ServicesPage = lazy(() => import('./pages/ServicesPage'));
-const ContactPage = lazy(() => import('./pages/ContactPage'));
-const GoldenHourPage = lazy(() => import('./pages/GoldenHourPage'));
-const AboutPage = lazy(() => import('./pages/AboutPage'));
-const BookPage = lazy(() => import('./pages/BookPage'));
-const ProfilePage = lazy(() => import('./pages/ProfilePage'));
-const MyBookingsPage = lazy(() => import('./pages/MyBookingsPage'));
-const ProjectsPage = lazy(() => import('./pages/ProjectsPage'));
-const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
-const LoginPage = lazy(() => import('./pages/LoginPage'));
+// Type for all possible pages
+type PageType =
+  | 'home'
+  | 'studios'
+  | 'services'
+  | 'contact'
+  | 'golden-hour'
+  | 'about'
+  | 'portfolio'
+  | 'book'
+  | 'login'
+  | 'register'
+  | 'dashboard'
+  | 'admin';
 
-// Admin Components - Lazy loaded
-const AdminLogin = lazy(() => import('./components/admin/AdminLogin'));
-const AdminLayout = lazy(() => import('./components/admin/AdminLayout'));
-const AdminDashboard = lazy(() => import('./components/admin/AdminDashboard'));
-const AdminBookingsPage = lazy(() => import('./components/admin/AdminBookingsPage'));
-const AdminStudiosPage = lazy(() => import('./components/admin/AdminStudiosPage'));
-const AdminProjectsPage = lazy(() => import('./components/admin/AdminProjectsPage'));
-const AdminEnquiriesPage = lazy(() => import('./components/admin/AdminEnquiriesPage'));
-const AdminContentPage = lazy(() => import('./components/admin/AdminContentPage'));
-const AdminSettingsPage = lazy(() => import('./components/admin/AdminSettingsPage'));
+const NavigationHandler: React.FC = () => {
+  const { user, logout } = useAuth();
+  const [currentPage, setCurrentPage] = useState<PageType>('home');
 
-// Protected Route Component
-const ProtectedAdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAuthenticated, isLoading } = useAdminAuth();
+  const parseHash = (): PageType => {
+    const raw = window.location.hash.replace(/^#\/?/, '');
+    const page = (raw || 'home') as PageType;
+    const allowed: PageType[] = [
+      'home',
+      'studios',
+      'services',
+      'contact',
+      'golden-hour',
+      'about',
+      'portfolio',
+      'book',
+      'login',
+      'register',
+      'dashboard',
+      'admin',
+    ];
+    return allowed.includes(page) ? page : 'home';
+  };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="w-10 h-10 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-      </div>
-    );
-  }
+  useEffect(() => {
+    // Initialize from current hash + keep in sync for pages that set window.location.hash
+    const sync = () => setCurrentPage(parseHash());
+    sync();
+    window.addEventListener('hashchange', sync);
+    return () => window.removeEventListener('hashchange', sync);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  if (!isAuthenticated) {
-    return <Navigate to="/admin/login" replace />;
-  }
+  const navigate = (page: PageType) => {
+    setCurrentPage(page);
+    window.location.hash = `#/${page === 'home' ? '' : page}`;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
-  return <>{children}</>;
-};
+  // Render appropriate page
+  const renderPage = () => {
+    switch (currentPage) {
+      case 'login':
+        return <LoginPage />;
+      case 'register':
+        return <RegisterPage />;
+      case 'dashboard':
+        return <UserDashboardPage />;
+      case 'admin':
+        return <AdminDashboardPage />;
+      case 'home':
+        return (
+          <>
+            <Hero onNavigate={navigate as any} />
+            <About onNavigate={navigate} />
+            <ServiceGrid />
+            <VirtualProduction />
+            <Hospitality />
+            <EventSpaces />
+            <RecentProductions />
+          </>
+        );
+      case 'studios':
+        return <StudiosPage />;
+      case 'services':
+        return <ServicesPage />;
+      case 'golden-hour':
+        return <GoldenHourPage />;
+      case 'about':
+        return <AboutPage />;
+      case 'portfolio':
+        return <Portfolio />;
+      case 'book':
+        return <BookPage />;
+      case 'contact':
+      default:
+        return <ContactPage />;
+    }
+  };
 
-// Protected User Route - redirects to login if not authenticated
-const ProtectedUserRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAuthenticated, isLoading } = useUserAuth();
+  // Determine what to show in navbar based on auth state
+  const navbarProps = {
+    onNavigate: navigate,
+    currentPage,
+    user,
+    logout,
+  };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#F4F4F4] flex items-center justify-center">
-        <div className="w-10 h-10 border-2 border-black/20 border-t-black rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: window.location.pathname }} replace />;
-  }
-
-  return <>{children}</>;
-};
-
-// Loading fallback for code-split chunks
-const PageLoadingFallback: React.FC = () => (
-  <div className="min-h-screen bg-[#F4F4F4] flex items-center justify-center">
-    <div className="text-center">
-      <div className="w-16 h-16 border-4 border-black/10 border-t-black rounded-full animate-spin mx-auto mb-4" />
-      <p className="text-neutral-600">Loading...</p>
-    </div>
-  </div>
-);
-
-function App() {
   return (
-    <ErrorBoundary>
-      <GoogleAnalytics />
-      <AdminAuthProvider>
-        <UserAuthProvider>
-          <ContentProvider>
-            <Router>
-            <Suspense fallback={<PageLoadingFallback />}>
-              <Routes>
-                {/* Main Website Routes */}
-                <Route path="/" element={<MainLayout />}>
-                  <Route index element={<HomePage />} />
-                  <Route path="studios" element={<StudiosPage />} />
-                  <Route path="services" element={<ServicesPage />} />
-                  <Route path="contact" element={<ContactPage />} />
-                  <Route path="golden-hour" element={<GoldenHourPage />} />
-                  <Route path="about" element={<AboutPage />} />
-                  <Route path="projects" element={<ProjectsPage />} />
-                  <Route path="my-bookings" element={<MyBookingsPage />} />
-                  {/* Protected user routes */}
-                  <Route path="book" element={
-                    <ProtectedUserRoute>
-                      <BookPage />
-                    </ProtectedUserRoute>
-                  } />
-                  <Route path="profile" element={
-                    <ProtectedUserRoute>
-                      <ProfilePage />
-                    </ProtectedUserRoute>
-                  } />
-                </Route>
-
-                {/* User Auth */}
-                <Route path="/login" element={<LoginPage />} />
-
-                {/* Admin Routes */}
-                <Route path="/admin/login" element={<AdminLogin />} />
-                <Route
-                  path="/admin"
-                  element={
-                    <ProtectedAdminRoute>
-                      <AdminLayout />
-                    </ProtectedAdminRoute>
-                  }
-                >
-                  <Route index element={<Navigate to="/admin/dashboard" replace />} />
-                  <Route path="dashboard" element={<AdminDashboard />} />
-                  <Route path="bookings" element={<AdminBookingsPage />} />
-                  <Route path="studios" element={<AdminStudiosPage />} />
-                  <Route path="projects" element={<AdminProjectsPage />} />
-                  <Route path="enquiries" element={<AdminEnquiriesPage />} />
-                  <Route path="content" element={<AdminContentPage />} />
-                  <Route path="settings" element={<AdminSettingsPage />} />
-                </Route>
-
-                {/* Fallback */}
-                <Route path="*" element={<NotFoundPage />} />
-              </Routes>
-            </Suspense>
-          </Router>
-        </ContentProvider>
-        </UserAuthProvider>
-      </AdminAuthProvider>
-    </ErrorBoundary>
+    <div className="relative min-h-screen">
+      <Navbar {...navbarProps} />
+      <main>{renderPage()}</main>
+      {!['login', 'register'].includes(currentPage) && <Footer />}
+      <AIAssistant />
+    </div>
   );
-}
+};
+
+const App: React.FC = () => {
+  return (
+    <AuthProvider>
+      <ContentProvider>
+        <NavigationHandler />
+      </ContentProvider>
+    </AuthProvider>
+  );
+};
 
 export default App;
