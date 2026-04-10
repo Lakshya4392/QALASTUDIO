@@ -64,9 +64,32 @@ const AdminContentPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   const [hero, setHero] = useState({ tagline: '', headline: '', subtitle: '', tagline2: '', ctaPrimary: '', ctaSecondary: '', location: '' });
-  const [about, setAbout] = useState({ philosophyTitle: '', philosophyText: '', description: '', quote: '', quoteAuthor: '', image: '' });
+  const [about, setAbout] = useState({
+    eyebrow: 'The Minds Behind',
+    headingLine1: 'MEET THE MINDS',
+    headingLine2: 'BEHIND THE MAGIC',
+    members: [
+      { name: 'Mudit Sharma', role: 'THE DRIVING FORCE', quote: "Founder. Visionary. Petrolhead. Mudit doesn't just build studios; he builds ecosystems for creativity. His passion is the fuel that keeps Qala moving forward at 100mph.", image: '/assets/mudit.png', footNote: 'Grew up in garage bands & garage startups', annotations: ["Can't live without!\nHis Car", 'FPV goggles on,\nworld off', 'Builder by day,\nDJ by night'], ghostName: 'MUDIT' },
+      { name: 'Rishab', role: 'MASTER OF COMPOSITION', quote: "For most, Golden Hour is a time of day; for Rishab, it's game time. Addicted to cinematic flair and perfect framing, he's the one who turns a shot into a story.", image: '/assets/rishab.png', ghostName: 'RISHAB', footNote: 'Uses Ctrl+Z more than anything!! • Style: Cinematic', annotations: ['Addicted to\ncomposition', 'Builder mindset', 'Fav time? golden hour'] },
+      { name: 'Parth', role: 'THE DOP & STORYTELLER', quote: 'Seeing the world through a 16-35mm lens, Parth captures what others miss. He doesn\'t just record footage; he crafts visual narratives that breathe life into every frame.', image: '/assets/parth.png', ghostName: 'PARTH', footNote: 'Shoots in 24fps but thinks 100 ideas per second', annotations: ['Go to lens:\n16-35mm', 'Dream location:\nLadakh', 'Sharp story telling'] }
+    ],
+    manifestoHeading: "QALA IS NOT JUST A SPACE; IT'S A",
+    manifestoHighlight: 'MOVEMENT',
+    manifestoText: 'We are a team of misfits, artists, and gear-heads united by one goal: Your best shot.'
+  });
   const [contact, setContact] = useState({ email: '', phone: '', address: '', mapUrl: '', socialLinks: { instagram: '', twitter: '', linkedin: '' } });
-  const [services, setServices] = useState<Array<{ id: string; name: string; category: string; img: string; isActive: boolean; expanded?: boolean }>>([]);
+  
+  const [services, setServices] = useState({
+    headerTitle: 'PRODUCTION SERVICES',
+    headerSubtitle: 'Everything you need from pre-production to wrap.',
+    sections: [
+      { key: 'Equipment', title: 'Equipment Rental', subtitle: '', description: "Qala Studios houses Punjab's most extensive inventory of high-end camera, lighting, and grip equipment. Our on-site department ensures your technical needs are met with precision.", image: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&q=80&w=1200', layout: 'image-left', beforeImage: '', afterVideo: '', expanded: false },
+      { key: 'Digital', title: 'Digital Services', subtitle: '', description: 'Capture your vision with our top-tier digital support. We provide calibrated workstations, high-speed data management, and on-site digital technicians for seamless workflow from sensor to server.', image: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&q=80&w=1200', layout: 'image-right', beforeImage: '', afterVideo: '', expanded: false },
+      { key: 'VFX', title: 'VFX Magic', subtitle: 'Where Imagination Meets Reality.', description: 'Our in-house VFX experts convert your wildest concepts into pixel-perfect reality, from chroma keying to 3D environment integration.', image: 'https://images.unsplash.com/photo-1594909122845-11baa439b7bf?auto=format&fit=crop&q=80&w=1200', layout: 'image-left', beforeImage: 'https://images.unsplash.com/photo-1594909122845-11baa439b7bf?auto=format&fit=crop&q=80&w=1200', afterVideo: 'https://assets.mixkit.co/videos/preview/mixkit-digital-animation-of-a-futuristic-city-4412-large.mp4', expanded: false },
+      { key: 'Drone', title: 'Drone Shoot & Aerial Cinematography', subtitle: 'New Heights, New Perspectives.', description: 'Capture the bigger picture with certified drone pilots delivering 4K HDR aerial shots and fast-paced FPV maneuvers.', image: 'https://images.unsplash.com/photo-1508444845599-5c89863b1c44?auto=format&fit=crop&q=80&w=1200', layout: 'image-right', beforeImage: '', afterVideo: '', expanded: false },
+      { key: 'Locations', title: 'Location Scouting', subtitle: '', description: 'Beyond our dedicated studios, we offer location scouting and production vehicle support for shoots across Punjab.', image: 'https://images.unsplash.com/photo-1502444330042-d1a1ddf9bb5b?auto=format&fit=crop&q=80&w=1200', layout: 'image-left', beforeImage: '', afterVideo: '', expanded: false },
+    ]
+  });
   const [uploadedImages, setUploadedImages] = useState<any[]>([]);
 
 
@@ -81,18 +104,19 @@ const AdminContentPage: React.FC = () => {
           getContent('SERVICES'),
         ]);
         if (h?.data) setHero(prev => ({ ...prev, ...h.data }));
-        if (a?.data) setAbout(prev => ({ ...prev, ...a.data }));
+        if (a?.data && Array.isArray(a.data.members)) {
+          setAbout(prev => ({ 
+            ...prev, ...a.data, 
+            members: a.data.members.length === 3 ? a.data.members : prev.members 
+          }));
+        }
         if (c?.data) setContact(prev => ({ ...prev, ...c.data, socialLinks: c.data.socialLinks || prev.socialLinks }));
-        const svcList = s?.data?.services || (Array.isArray(s?.data) ? s.data : null);
-        if (svcList) {
-          setServices(svcList.map((sv: any) => ({
-            id: sv.id,
-            name: sv.name,
-            category: sv.category,
-            img: sv.image_url || sv.img || '',
-            isActive: sv.is_active ?? true,
-            expanded: false,
-          })));
+        if (s?.data && Array.isArray(s.data.sections)) {
+          setServices(prev => ({
+            ...prev,
+            ...s.data,
+            sections: s.data.sections.map((sec: any) => ({ ...sec, expanded: false }))
+          }));
         }
       } catch (e) {
         console.error('Failed to load content:', e);
@@ -111,9 +135,8 @@ const AdminContentPage: React.FC = () => {
       if (t === 'about') { await updateContent('ABOUT', about); updateSection('about', about); }
       if (t === 'contact') { await updateContent('CONTACT', contact); updateSection('contact', contact); }
       if (t === 'services') {
-        const mapped = services.map(s => ({ id: s.id, name: s.name, category: s.category, image_url: s.img, is_active: s.isActive }));
-        await updateContent('SERVICES', { services: mapped });
-        updateSection('services', mapped);
+        await updateContent('SERVICES', services);
+        updateSection('services', services);
       }
       setSaved(t);
       setTimeout(() => setSaved(null), 3000);
@@ -129,12 +152,11 @@ const AdminContentPage: React.FC = () => {
     setSaving(true);
     setError('');
     try {
-      const mapped = services.map(s => ({ id: s.id, name: s.name, category: s.category, image_url: s.img, is_active: s.isActive }));
       await Promise.all([
         updateContent('HERO', hero).then(() => updateSection('hero', hero)),
         updateContent('ABOUT', about).then(() => updateSection('about', about)),
         updateContent('CONTACT', contact).then(() => updateSection('contact', contact)),
-        updateContent('SERVICES', { services: mapped }).then(() => updateSection('services', mapped)),
+        updateContent('SERVICES', services).then(() => updateSection('services', services)),
       ]);
       setSaved(tab);
       setTimeout(() => setSaved(null), 3000);
@@ -235,22 +257,49 @@ const AdminContentPage: React.FC = () => {
           )}
 
           {tab === 'about' && (
-            <div className="space-y-10 animate-fade-in">
-              <div className="grid md:grid-cols-2 gap-8">
-                <F label="Philosophy Headline"><I value={about.philosophyTitle} onChange={e => setAbout({ ...about, philosophyTitle: e.target.value })} /></F>
-                <F label="Quote Attribution"><I value={about.quoteAuthor} onChange={e => setAbout({ ...about, quoteAuthor: e.target.value })} /></F>
-                <div className="md:col-span-2 space-y-8">
-                  <F label="Philosophy Statement"><T rows={2} value={about.philosophyText} onChange={e => setAbout({ ...about, philosophyText: e.target.value })} /></F>
-                  <F label="Main About Description"><T rows={5} value={about.description} onChange={e => setAbout({ ...about, description: e.target.value })} /></F>
-                  <F label="Highlighted Quote Box"><T rows={2} value={about.quote} onChange={e => setAbout({ ...about, quote: e.target.value })} /></F>
-                </div>
-                <div className="md:col-span-2">
-                  <F label="Featured About Image">
-                    <div className="p-8 bg-black/5 rounded-3xl border-2 border-dashed border-black/10">
-                      <ImageUpload value={about.image} onChange={url => setAbout({ ...about, image: url })} folder="qala-studios/about" label="Select a high-quality vertical or wide image" />
-                    </div>
-                  </F>
-                </div>
+            <div className="space-y-12 animate-fade-in">
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 pb-10 border-b-2 border-black/5">
+                <F label="Eyebrow Text"><I value={about.eyebrow} onChange={e => setAbout({ ...about, eyebrow: e.target.value })} /></F>
+                <F label="Heading Line 1"><I value={about.headingLine1} onChange={e => setAbout({ ...about, headingLine1: e.target.value })} /></F>
+                <F label="Heading Line 2"><I value={about.headingLine2} onChange={e => setAbout({ ...about, headingLine2: e.target.value })} /></F>
+              </div>
+
+              <h3 className="text-xl font-black uppercase tracking-wider text-black flex items-center gap-3">
+                <div className="w-1.5 h-8 bg-black rounded-full" /> TEAM MEMBERS
+              </h3>
+              
+              <div className="space-y-10">
+                {about.members.map((m, i) => (
+                  <div key={i} className="bg-black/[0.02] border-2 border-black/5 p-8 rounded-[2rem] gap-8 grid md:grid-cols-12">
+                     <div className="md:col-span-4 self-stretch">
+                       <F label={`Member ${i+1} Photo`} className="h-full">
+                         <div className="bg-white p-4 rounded-3xl shadow-sm border-2 border-dashed border-black/10 h-full min-h-[300px]">
+                           <ImageUpload value={m.image} onChange={url => { const newA = {...about}; newA.members[i].image = url; setAbout(newA); }} folder="qala-studios/team" label="Vertical Portrait" availableImages={uploadedImages} onUploadComplete={() => {}} />
+                         </div>
+                       </F>
+                     </div>
+                     <div className="md:col-span-8 space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <F label="Full Name"><I value={m.name} onChange={e => { const newA = {...about}; newA.members[i].name = e.target.value; setAbout(newA); }} /></F>
+                          <F label="Role"><I value={m.role} onChange={e => { const newA = {...about}; newA.members[i].role = e.target.value; setAbout(newA); }} /></F>
+                          <F label="Ghost Name (Background)"><I value={m.ghostName} onChange={e => { const newA = {...about}; newA.members[i].ghostName = e.target.value; setAbout(newA); }} /></F>
+                          <F label="Footnote / Trivia"><I value={m.footNote} onChange={e => { const newA = {...about}; newA.members[i].footNote = e.target.value; setAbout(newA); }} /></F>
+                        </div>
+                        <F label="Personal Quote"><T rows={3} value={m.quote} onChange={e => { const newA = {...about}; newA.members[i].quote = e.target.value; setAbout(newA); }} /></F>
+                     </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="pt-10 border-t-2 border-black/5 space-y-8">
+                 <h3 className="text-xl font-black uppercase tracking-wider text-black flex items-center gap-3">
+                   <div className="w-1.5 h-8 bg-black rounded-full" /> MANIFESTO
+                 </h3>
+                 <div className="grid md:grid-cols-2 gap-8">
+                   <F label="Heading (Regular)"><I value={about.manifestoHeading} onChange={e => setAbout({ ...about, manifestoHeading: e.target.value })} /></F>
+                   <F label="Heading (Highlight)"><I value={about.manifestoHighlight} onChange={e => setAbout({ ...about, manifestoHighlight: e.target.value })} /></F>
+                   <F label="Main Body" className="md:col-span-2"><T rows={3} value={about.manifestoText} onChange={e => setAbout({ ...about, manifestoText: e.target.value })} /></F>
+                 </div>
               </div>
             </div>
           )}
@@ -282,24 +331,29 @@ const AdminContentPage: React.FC = () => {
           )}
 
           {tab === 'services' && (
-            <div className="space-y-8 animate-fade-in">              {services.map((svc, i) => (
-                <div key={svc.id} className={`group bg-white border-2 rounded-[2rem] transition-all duration-500 overflow-hidden ${svc.expanded ? 'border-black shadow-2xl scale-[1.01]' : 'border-black/10 hover:border-black/30'}`}>
+            <div className="space-y-12 animate-fade-in">
+              <div className="grid md:grid-cols-2 gap-8 pb-10 border-b-2 border-black/5">
+                <F label="Header Title"><I value={services.headerTitle} onChange={e => setServices({ ...services, headerTitle: e.target.value })} /></F>
+                <F label="Header Subtitle"><I value={services.headerSubtitle} onChange={e => setServices({ ...services, headerSubtitle: e.target.value })} /></F>
+              </div>
+              <div className="space-y-8 animate-fade-in">
+                {services.sections.map((svc, i) => (
+                <div key={svc.key} className={`group bg-white border-2 rounded-[2rem] transition-all duration-500 overflow-hidden ${svc.expanded ? 'border-black shadow-2xl scale-[1.01]' : 'border-black/10 hover:border-black/30'}`}>
                   <div className="p-8 cursor-pointer flex items-center gap-8" onClick={() => {
-                    const s = [...services];
-                    s.forEach((sv, idx) => s[idx] = { ...sv, expanded: idx === i ? !sv.expanded : false });
+                    const s = { ...services };
+                    s.sections.forEach((sv, idx) => s.sections[idx] = { ...sv, expanded: idx === i ? !sv.expanded : false });
                     setServices(s);
                   }}>
                     <div className="w-24 h-24 bg-black/5 rounded-2xl overflow-hidden border-2 border-black/5 flex-shrink-0 relative group-hover:border-black/10 transition-all">
-                      {svc.img ? <img src={svc.img} alt={svc.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><Image className="w-8 h-8 text-black/20" /></div>}
-                      {!svc.isActive && <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] flex items-center justify-center"><p className="text-[10px] font-black uppercase">Hidden</p></div>}
+                      {svc.image ? <img src={svc.image} alt={svc.title} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><Image className="w-8 h-8 text-black/20" /></div>}
                     </div>
                     <div className="flex-1">
-                      <h4 className="text-xl font-black uppercase tracking-tight text-neutral-800">{svc.name || 'UNNAMED SERVICE'}</h4>
-                      <p className="text-xs font-bold uppercase tracking-[0.2em] text-neutral-400 mt-1">{svc.category || 'GENERAL'}</p>
+                      <h4 className="text-xl font-black uppercase tracking-tight text-neutral-800">{svc.title || 'UNNAMED SECTION'}</h4>
+                      <p className="text-xs font-bold uppercase tracking-[0.2em] text-neutral-400 mt-1">{svc.subtitle || svc.key}</p>
                     </div>
                     <div className="flex items-center gap-4">
-                       <span className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest ${svc.isActive ? 'bg-black text-white' : 'bg-gray-100 text-gray-400'}`}>
-                         {svc.isActive ? 'LIVE' : 'DRAFT'}
+                       <span className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-black/5 text-black/40">
+                         {svc.layout}
                        </span>
                        <div className={`p-4 rounded-full transition-all ${svc.expanded ? 'bg-black text-white' : 'bg-black/5 text-black'}`}>
                          {svc.expanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
@@ -310,23 +364,36 @@ const AdminContentPage: React.FC = () => {
                   {svc.expanded && (
                     <div className="px-10 pb-10 pt-4 border-t-2 border-black/5 space-y-10 animate-fade-in bg-black/[0.01]">
                       <div className="grid md:grid-cols-12 gap-10 items-start">
-                        <div className="md:col-span-4 self-stretch">
-                           <F label="Featured Image">
-                             <div className="bg-white p-6 rounded-3xl shadow-sm border-2 border-black/5 h-full">
-                               <ImageUpload value={svc.img} onChange={url => { const s = [...services]; s[i].img = url; setServices(s); }} folder="qala-studios/services" label="Minimalist framing preferred" />
+                        <div className="md:col-span-4 self-stretch space-y-6">
+                           <F label="Primary Image">
+                             <div className="bg-white p-6 rounded-3xl shadow-sm border-2 border-black/5">
+                               <ImageUpload value={svc.image} onChange={url => { const s = { ...services }; s.sections[i].image = url; setServices(s); }} folder="qala-studios/services" label="Standard or After-state" availableImages={uploadedImages} onUploadComplete={() => {}} />
                              </div>
                            </F>
+                           {svc.key === 'VFX' && (
+                             <F label="VFX Before Image">
+                               <div className="bg-white p-6 rounded-3xl shadow-sm border-2 border-black/5">
+                                 <ImageUpload value={svc.beforeImage || ''} onChange={url => { const s = { ...services }; s.sections[i].beforeImage = url; setServices(s); }} folder="qala-studios/services" label="Before-state Image" availableImages={uploadedImages} onUploadComplete={() => {}} />
+                               </div>
+                             </F>
+                           )}
                         </div>
                         <div className="md:col-span-8 grid md:grid-cols-2 gap-8">
-                             <F label="Service Title"><I value={svc.name} onChange={e => { const s = [...services]; s[i].name = e.target.value; setServices(s); }} /></F>
-                             <F label="Service Category"><I value={svc.category} onChange={e => { const s = [...services]; s[i].category = e.target.value; setServices(s); }} /></F>
-                             <div className="md:col-span-2 pt-6">
-                               <button 
-                                 onClick={() => { const s = [...services]; s[i].isActive = !s[i].isActive; setServices(s); }}
-                                 className={`w-full py-5 rounded-2xl text-[11px] font-black uppercase tracking-widest border-2 transition-all ${svc.isActive ? 'bg-black text-white border-black shadow-lg' : 'bg-white text-black/40 border-black/10 hover:border-black/40'}`}
-                               >
-                                 {svc.isActive ? 'DISABLE FROM PUBLIC VIEW' : 'ENABLE ON WEBSITE'}
-                               </button>
+                             <F label="Section Title"><I value={svc.title} onChange={e => { const s = { ...services }; s.sections[i].title = e.target.value; setServices(s); }} /></F>
+                             <F label="Section Subtitle"><I value={svc.subtitle} onChange={e => { const s = { ...services }; s.sections[i].subtitle = e.target.value; setServices(s); }} /></F>
+                             <F label="Description" className="md:col-span-2"><T rows={5} value={svc.description} onChange={e => { const s = { ...services }; s.sections[i].description = e.target.value; setServices(s); }} /></F>
+                             
+                             <div className="md:col-span-2">
+                               <F label="Layout Alignment">
+                                 <select 
+                                   value={svc.layout} 
+                                   onChange={e => { const s = { ...services }; s.sections[i].layout = e.target.value as any; setServices(s); }}
+                                   className="w-full px-5 py-4 border-2 border-black/10 rounded-2xl focus:border-black focus:ring-4 focus:ring-black/5 outline-none text-sm font-bold uppercase tracking-wide transition-all bg-black/5 cursor-pointer appearance-none"
+                                 >
+                                   <option value="image-left">Image Left (Text Right)</option>
+                                   <option value="image-right">Image Right (Text Left)</option>
+                                 </select>
+                               </F>
                              </div>
                         </div>
                       </div>
@@ -334,6 +401,7 @@ const AdminContentPage: React.FC = () => {
                   )}
                 </div>
               ))}
+              </div>
             </div>
           )}
 
