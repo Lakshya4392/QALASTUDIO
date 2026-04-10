@@ -177,7 +177,11 @@ const AdminProjectsPage: React.FC = () => {
 
   const fetchImages = React.useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/upload/images?folder=qala-studios/projects`, { credentials: 'include' });
+      const token = localStorage.getItem('admin_token');
+      const res = await fetch(`${API_BASE}/upload/images?folder=qala-studios/projects`, {
+        credentials: 'include',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+      });
       if (res.ok) {
         const data = await res.json();
         setUploadedImages(data.images || []);
@@ -194,8 +198,8 @@ const AdminProjectsPage: React.FC = () => {
         brand: data.brand,
         name: data.name,
         year: data.year,
-        media_url: data.media_url,
-        thumbnail: data.thumbnail,
+        media_url: data.media_url || data.thumbnail || 'https://placeholder.com/image.jpg',
+        thumbnail: data.thumbnail || null,
         is_active: data.isActive,
         category: data.category,
         order: editing ? editing.order : projects.length + 1,
@@ -205,7 +209,7 @@ const AdminProjectsPage: React.FC = () => {
       await load();
       setShowForm(false);
       setEditing(null);
-    } catch { alert('Failed to save project'); }
+    } catch (e: any) { alert(`Failed to save project: ${e?.message || 'Unknown error'}`); }
   };
 
   const handleDelete = async (id: string) => {

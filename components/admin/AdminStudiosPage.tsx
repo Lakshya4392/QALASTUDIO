@@ -197,7 +197,7 @@ const AdminStudiosPage: React.FC = () => {
       await load();
       setShowForm(false);
       setEditing(null);
-    } catch { alert('Failed to save studio'); }
+    } catch (e: any) { alert(`Failed to save studio: ${e?.message || 'Unknown error'}`); }
   };
 
   const handleDelete = async (id: string) => {

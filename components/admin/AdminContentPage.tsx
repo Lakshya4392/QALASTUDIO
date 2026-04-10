@@ -115,8 +115,28 @@ const AdminContentPage: React.FC = () => {
         await updateContent('SERVICES', { services: mapped });
         updateSection('services', mapped);
       }
-
       setSaved(t);
+      setTimeout(() => setSaved(null), 3000);
+      refresh().catch(() => {});
+    } catch (e: any) {
+      setError(e.message || 'Save failed');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const saveAll = async () => {
+    setSaving(true);
+    setError('');
+    try {
+      const mapped = services.map(s => ({ id: s.id, name: s.name, category: s.category, image_url: s.img, is_active: s.isActive }));
+      await Promise.all([
+        updateContent('HERO', hero).then(() => updateSection('hero', hero)),
+        updateContent('ABOUT', about).then(() => updateSection('about', about)),
+        updateContent('CONTACT', contact).then(() => updateSection('contact', contact)),
+        updateContent('SERVICES', { services: mapped }).then(() => updateSection('services', mapped)),
+      ]);
+      setSaved(tab);
       setTimeout(() => setSaved(null), 3000);
       refresh().catch(() => {});
     } catch (e: any) {
