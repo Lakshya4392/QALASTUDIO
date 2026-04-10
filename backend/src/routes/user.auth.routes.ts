@@ -104,6 +104,8 @@ router.post('/register', async (req: Request, res: Response) => {
       token, // Return token for cross-domain localStorage auth
       user: { id: user.id, email: user.email, role: user.role },
     });
+  } catch (error) {
+    console.error('Register error:', error);
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: 'Invalid input', details: error.issues });
     }
