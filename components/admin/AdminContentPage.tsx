@@ -38,9 +38,13 @@ const getContent = async (type: string) => {
 };
 
 const updateContent = async (type: string, data: any) => {
+  const token = localStorage.getItem('admin_token');
   const r = await fetch(`${API_BASE}/content/${type}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+    },
     credentials: 'include',
     body: JSON.stringify({ data }),
   });

@@ -174,8 +174,10 @@ const AdminGoldenHourPage: React.FC = () => {
 
   const fetchImages = React.useCallback(async () => {
     try {
+      const token = localStorage.getItem('admin_token');
       const res = await fetch(`${API_BASE}/upload/images?folder=qala-studios/golden-hour`, {
         credentials: 'include',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
       });
       if (res.ok) {
         const data = await res.json();

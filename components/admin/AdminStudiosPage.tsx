@@ -169,8 +169,10 @@ const AdminStudiosPage: React.FC = () => {
 
   const fetchStudioImages = React.useCallback(async () => {
     try {
+      const token = localStorage.getItem('admin_token');
       const res = await fetch(`${API_BASE}/upload/images?folder=qala-studios/studios`, {
         credentials: 'include',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
       });
       if (res.ok) {
         const data = await res.json();

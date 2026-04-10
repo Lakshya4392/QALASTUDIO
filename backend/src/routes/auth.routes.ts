@@ -128,6 +128,7 @@ router.post('/login', async (req: Request, res: Response) => {
 
     return res.json({
       success: true,
+      token, // Return token so frontend can store in localStorage for cross-domain
       user: adminData
     });
   } catch (error) {

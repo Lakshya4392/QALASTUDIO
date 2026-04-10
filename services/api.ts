@@ -129,10 +129,12 @@ export const api = {
       return res.json();
     },
     verify: async () => {
-      // Verify using cookie or token (no token needed, server reads cookie)
+      // Try localStorage token first (cross-domain), then cookie
+      const token = localStorage.getItem('admin_token');
       const res = await fetch(`${API_BASE}/auth/verify`, {
         method: 'POST',
-        credentials: 'include', // Send cookie if exists
+        credentials: 'include',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
       });
       const data = await res.json().catch(() => ({ valid: false }));
       return data;
@@ -188,8 +190,10 @@ export const api = {
       return res.json();
     },
     getMe: async () => {
+      const token = localStorage.getItem('user_token');
       const res = await fetch(`${API_BASE}/users/me`, {
         credentials: 'include',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
       });
       if (!res.ok) throw new Error('Not authenticated');
       return res.json();

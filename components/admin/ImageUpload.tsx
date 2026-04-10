@@ -29,10 +29,11 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ value, onChange, folder = 'qa
     try {
       const formData = new FormData();
       formData.append('image', file);
-
+      const token = localStorage.getItem('admin_token');
       const res = await fetch(`${API_BASE}/upload?folder=${folder}`, {
         method: 'POST',
         credentials: 'include',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
         body: formData,
       });
 

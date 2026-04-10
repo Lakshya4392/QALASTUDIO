@@ -308,48 +308,90 @@ const StudiosPage: React.FC = () => {
       {/* Projects Carousel */}
       <ProjectsCarousel title="Recent Productions" />
 
-      {/* Studio Detail Drawer */}
+      {/* Studio Detail Modal — GoldenHour style */}
       {selectedStudio && (
-        <div className="fixed inset-y-0 right-0 w-full md:w-[520px] z-[110] bg-white shadow-2xl border-l border-black/20 flex flex-col">
-          <div className="p-6 border-b border-black/10 flex justify-between items-center">
-            <div>
-              <p className="text-[9px] font-black uppercase tracking-widest text-neutral-400 mb-1">{selectedStudio.type}</p>
-              <h3 className="text-2xl font-['Oswald'] font-bold uppercase tracking-tight">{selectedStudio.name}</h3>
-            </div>
-            <button onClick={() => setSelectedStudio(null)} className="text-2xl font-light hover:opacity-50 transition-opacity">×</button>
-          </div>
-          <div className="flex-1 overflow-y-auto">
-            {selectedStudio.img
-              ? <img src={optimizeCloudinaryUrl(selectedStudio.img, { width: 1200 })} alt={selectedStudio.name} className="w-full aspect-video object-cover" />
-              : <div className="w-full aspect-video bg-neutral-100" />
-            }
-            <div className="p-6 space-y-5">
-              <p className="text-neutral-600 text-sm leading-relaxed">{selectedStudio.description}</p>
-              {selectedStudio.features.length > 0 && (
-                <div>
-                  <p className="text-[9px] font-black uppercase tracking-widest text-neutral-400 mb-2">Features</p>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedStudio.features.map((f, i) => (
-                      <span key={i} className="px-3 py-1 border border-black/10 text-[9px] font-bold uppercase tracking-wider">{f}</span>
-                    ))}
-                  </div>
-                </div>
-              )}
-              <div className="pt-4 border-t border-black/10">
-                <p className="text-3xl font-black">{selectedStudio.price}</p>
-                <p className="text-[9px] uppercase tracking-widest text-neutral-400">{selectedStudio.priceNote}</p>
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 md:p-10 animate-fade-in">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setSelectedStudio(null)} />
+
+          <div className="relative w-full max-w-7xl bg-white flex flex-col md:flex-row max-h-[90vh] overflow-hidden animate-slide-up">
+            <button
+              onClick={() => setSelectedStudio(null)}
+              className="absolute top-6 right-6 z-50 text-4xl font-light hover:rotate-90 transition-transform duration-500"
+            >×</button>
+
+            {/* Left: Image */}
+            <div className="w-full md:w-[60%] h-[50vh] md:h-auto bg-neutral-100 relative overflow-hidden">
+              {selectedStudio.img
+                ? <img src={optimizeCloudinaryUrl(selectedStudio.img, { width: 1200 })} alt={selectedStudio.name} className="w-full h-full object-cover" />
+                : <div className="w-full h-full bg-neutral-200" />
+              }
+              <div className="absolute top-6 left-6">
+                <span className="px-4 py-2 bg-white/90 backdrop-blur-md text-[10px] font-black uppercase tracking-widest">
+                  {selectedStudio.type}
+                </span>
               </div>
             </div>
-          </div>
-          <div className="p-4 border-t border-black/10 flex gap-3">
-            <button
-              className="flex-1 bg-black text-white py-4 uppercase font-black text-xs tracking-widest hover:bg-neutral-800 transition-all"
-              onClick={() => { setBookingStudio(selectedStudio); setSelectedStudio(null); }}
-            >Book This Studio</button>
-            <button
-              className="flex-1 border border-black py-4 uppercase font-black text-xs tracking-widest hover:bg-black hover:text-white transition-all"
-              onClick={() => setSelectedStudio(null)}
-            >Close</button>
+
+            {/* Right: Details */}
+            <div className="w-full md:w-[40%] p-10 md:p-16 overflow-y-auto">
+              <div className="mb-8">
+                <span className="text-[9px] font-black uppercase tracking-[0.5em] text-[#D4AF37] mb-4 block">
+                  PRODUCTION SPACE
+                </span>
+                <h2 className="text-5xl font-['Oswald'] font-bold uppercase tracking-tighter mb-6 leading-none">
+                  {selectedStudio.name}
+                </h2>
+                <p className="text-neutral-600 text-sm leading-relaxed italic">
+                  "{selectedStudio.description}"
+                </p>
+              </div>
+
+              <div className="space-y-8 mb-12 pb-12 border-b border-black/10">
+                {selectedStudio.features.length > 0 && (
+                  <div className="space-y-4">
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-neutral-400">FEATURES</h4>
+                    <div className="flex flex-wrap gap-3">
+                      {selectedStudio.features.map((f, i) => (
+                        <span key={i} className="px-4 py-2 bg-neutral-50 border border-black/10 text-xs font-bold uppercase tracking-wider">
+                          {f}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-4">
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-neutral-400">COMMERCIAL ESTIMATE</h4>
+                  <div className="flex items-baseline gap-3">
+                    <p className="text-4xl font-bold tracking-tighter">{selectedStudio.price}</p>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-black/30 bg-black/5 px-2 py-1 rounded-md">{selectedStudio.priceNote}</span>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-neutral-400">AVAILABILITY</h4>
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                    <span className="text-xs font-bold uppercase">READY FOR BOOKING</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-4">
+                <button
+                  className="w-full bg-black text-white py-5 uppercase font-black text-xs tracking-[0.3em] hover:invert transition-all"
+                  onClick={() => { setBookingStudio(selectedStudio); setSelectedStudio(null); }}
+                >
+                  BOOK THIS STUDIO
+                </button>
+                <button
+                  className="w-full border-2 border-black py-4 uppercase font-black text-xs tracking-widest hover:bg-black hover:text-white transition-all"
+                  onClick={() => setSelectedStudio(null)}
+                >
+                  CLOSE
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

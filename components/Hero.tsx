@@ -48,7 +48,7 @@ const Hero: React.FC<HeroProps> = ({ onNavigate }) => {
           </p>
 
           {/* Headline - BIG and BOLD */}
-          <h1 className="text-6xl md:text-8xl lg:text-9xl font-black leading-[0.95] uppercase text-white mb-6">
+          <h1 className="text-6xl md:text-8xl lg:text-9xl font-['Oswald'] font-bold leading-[0.9] uppercase text-white mb-6">
             {h.headline || 'QALA'}
           </h1>
 

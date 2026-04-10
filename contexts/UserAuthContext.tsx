@@ -44,6 +44,7 @@ export const UserAuthProvider: React.FC<{ children: ReactNode }> = ({ children }
     try {
       const res = await api.user.login(email, password);
       if (res.success) {
+        if (res.token) localStorage.setItem('user_token', res.token);
         await fetchUser();
         return { success: true };
       }
@@ -57,6 +58,7 @@ export const UserAuthProvider: React.FC<{ children: ReactNode }> = ({ children }
     try {
       const res = await api.user.register(fullName, email, phone, password);
       if (res.success) {
+        if (res.token) localStorage.setItem('user_token', res.token);
         await fetchUser();
         return { success: true };
       }
@@ -68,6 +70,7 @@ export const UserAuthProvider: React.FC<{ children: ReactNode }> = ({ children }
 
   const logout = async () => {
     await api.user.logout();
+    localStorage.removeItem('user_token');
     setUser(null);
   };
 

@@ -98,8 +98,8 @@ const ProjectsPage: React.FC = () => {
     <div className="bg-white min-h-screen text-black">
       <div className="pt-32 pb-0 px-6 md:px-12 max-w-[1600px] mx-auto">
         <FadeInSection>
-          <span className="text-[10px] font-black uppercase tracking-[0.4em] text-neutral-400 block mb-4">OUR WORK</span>
-          <h1 className="text-6xl md:text-8xl font-black uppercase tracking-tighter leading-none">PORTFOLIO</h1>
+          <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-neutral-400 block mb-4">OUR WORK</span>
+          <h1 className="text-6xl md:text-[9rem] font-['Oswald'] font-bold leading-[0.85] uppercase tracking-tighter max-w-5xl">PROJECTS</h1>
         </FadeInSection>
         <FadeInSection>
           <p className="mt-4 text-lg text-neutral-500 max-w-xl">A curated selection of productions shot at Qala Studios.</p>
@@ -147,7 +147,7 @@ const ProjectsPage: React.FC = () => {
               )}
               {selectedItem.year && <span className="text-[9px] font-bold text-white/30 uppercase tracking-widest">{selectedItem.year}</span>}
             </div>
-            <h2 className="text-white font-black text-3xl md:text-4xl uppercase tracking-tight mb-1">{selectedItem.brand}</h2>
+            <h2 className="text-white font-['Oswald'] font-bold text-3xl md:text-4xl uppercase tracking-tight mb-1">{selectedItem.brand}</h2>
             {selectedItem.name && <p className="text-white/50 text-sm mb-6">{selectedItem.name}</p>}
             {selectedItem.type === 'video' ? (
               <video src={selectedItem.media_url} controls autoPlay className="w-full max-h-[70vh] object-contain" />

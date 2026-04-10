@@ -45,7 +45,10 @@ export const AdminAuthProvider: React.FC<{ children: ReactNode }> = ({ children 
     try {
       const result = await api.auth.login(username, password);
       if (result.success && result.user) {
-        // Token is stored in httpOnly cookie, no need to store in localStorage
+        // Store token in localStorage for cross-domain auth (cookie blocked by browser cross-site)
+        if (result.token) {
+          localStorage.setItem('admin_token', result.token);
+        }
         setUser(result.user);
         setIsAuthenticated(true);
         return true;

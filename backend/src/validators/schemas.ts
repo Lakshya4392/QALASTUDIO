@@ -29,9 +29,14 @@ export const studioSchema = z.object({
   slug: z.string().optional(),
   tagline: z.string().optional(),
   description: z.string().optional(),
-  price: z.number().optional().nullable(),
+  // Accept string or number for price
+  price: z.union([z.string(), z.number()]).optional().nullable().transform(v => {
+    if (v === null || v === undefined || v === '') return null;
+    const n = Number(String(v).replace(/[^0-9.]/g, ''));
+    return isNaN(n) ? null : n;
+  }),
   price_note: z.string().optional().nullable(),
-  image_url: z.string().url().optional().nullable(),
+  image_url: z.union([z.string().url(), z.literal('')]).optional().nullable().transform(v => v === '' ? null : v),
   is_active: z.boolean().optional(),
   order: z.number().int().optional(),
   features: z.array(z.string()).optional(),
@@ -45,8 +50,8 @@ export const projectSchema = z.object({
   name: z.string(),
   year: z.string(),
   category: z.array(z.string()).optional(),
-  media_url: z.string().url(),
-  thumbnail: z.string().url().optional().nullable(),
+  media_url: z.union([z.string().url(), z.literal('')]).transform(v => v === '' ? 'https://placeholder.com' : v),
+  thumbnail: z.union([z.string().url(), z.literal('')]).optional().nullable().transform(v => v === '' ? null : v),
   is_active: z.boolean().optional(),
   order: z.number().int().optional(),
 });
