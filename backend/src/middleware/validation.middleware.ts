@@ -10,15 +10,21 @@ export interface ValidationError {
  * Throws error if any critical variable is missing
  */
 export const validateEnvironment = (): void => {
+  // Only truly critical vars — app cannot function without these
   const requiredEnvVars = [
     'JWT_SECRET',
     'DATABASE_URL',
+  ];
+
+  // Optional but warn if missing
+  const optionalEnvVars = [
     'ZOHO_EMAIL',
-    'ZOHO_APP_PASSWORD'
+    'ZOHO_APP_PASSWORD',
+    'CLOUDINARY_CLOUD_NAME',
+    'REDIS_URL',
   ];
 
   const missing: string[] = [];
-
   requiredEnvVars.forEach((envVar) => {
     if (!process.env[envVar] || process.env[envVar]?.trim() === '') {
       missing.push(envVar);
@@ -32,20 +38,19 @@ export const validateEnvironment = (): void => {
     );
   }
 
+  // Warn about optional missing vars
+  optionalEnvVars.forEach((envVar) => {
+    if (!process.env[envVar]) {
+      console.warn(`⚠️  Optional env var not set: ${envVar} — related features will be disabled`);
+    }
+  });
+
   // Validate JWT_SECRET strength
   const jwtSecret = process.env.JWT_SECRET!;
   if (jwtSecret === 'fallback-secret' || jwtSecret === 'secret' || jwtSecret.length < 32) {
     console.warn('⚠️  WARNING: JWT_SECRET is too weak. Use at least 32 random characters.');
     if (process.env.NODE_ENV === 'production') {
       throw new Error('JWT_SECRET must be at least 32 characters long in production');
-    }
-  }
-
-  // Validate DATABASE_URL has SSL in production
-  if (process.env.NODE_ENV === 'production') {
-    const dbUrl = process.env.DATABASE_URL || '';
-    if (!dbUrl.includes('sslmode=require') && !dbUrl.includes('postgresql://')) {
-      console.warn('⚠️  WARNING: DATABASE_URL should use SSL in production');
     }
   }
 

@@ -7,36 +7,258 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// 4.1 studios
 model Studio {
-  id                         String        @id @default(uuid())
-  name                       String
-  slug                       String        @unique
-  status                     StudioStatus  @default(ACTIVE)
-  timezone                   String        @default("UTC")
-  min_booking_duration_minutes Int         @default(60)
-  buffer_time_minutes        Int           @default(15)
-  order                      Int           @default(0)
-  is_active                  Boolean       @default(true)
-  tagline                    String?
-  description                String?
-  price                      Decimal?      @db.Decimal(10, 2)
-  price_note                 String?
-  image_url                  String?
-  features                   String[]      @default([])
-  max_booking_duration_hours Int?          @default(8)
-  created_at                 DateTime      @default(now())
-  updated_at                 DateTime      @updatedAt
-
-  // Relations
-  spaces            StudioSpace[]
-  availability_rules AvailabilityRule[]
-  blackout_periods   BlackoutPeriod[]
-  bookings           Booking[]
-  pricing_rules      PricingRule[]
-  booking_locks      BookingLock[]
+  id                           String             @id @default(uuid())
+  name                         String
+  slug                         String             @unique
+  status                       StudioStatus       @default(ACTIVE)
+  timezone                     String             @default("UTC")
+  min_booking_duration_minutes Int                @default(60)
+  buffer_time_minutes          Int                @default(15)
+  created_at                   DateTime           @default(now())
+  updated_at                   DateTime           @updatedAt
+  description                  String?
+  features                     String[]           @default([])
+  image_url                    String?
+  is_active                    Boolean            @default(true)
+  max_booking_duration_hours   Int?               @default(8)
+  order                        Int                @default(0)
+  price                        Decimal?           @db.Decimal(10, 2)
+  price_note                   String?
+  tagline                      String?
+  availability_rules           AvailabilityRule[]
+  blackout_periods             BlackoutPeriod[]
+  bookings                     Booking[]
+  booking_locks                BookingLock[]
+  pricing_rules                PricingRule[]
+  spaces                       StudioSpace[]
 
   @@index([status])
+  @@index([order])
+}
+
+model StudioSpace {
+  id         String   @id @default(uuid())
+  studio_id  String
+  name       String
+  capacity   Int
+  created_at DateTime @default(now())
+  studio     Studio   @relation(fields: [studio_id], references: [id])
+}
+
+model AvailabilityRule {
+  id          String  @id @default(uuid())
+  studio_id   String
+  day_of_week Int
+  start_time  String
+  end_time    String
+  is_active   Boolean @default(true)
+  studio      Studio  @relation(fields: [studio_id], references: [id])
+}
+
+model BlackoutPeriod {
+  id             String   @id @default(uuid())
+  studio_id      String
+  start_datetime DateTime
+  end_datetime   DateTime
+  reason         String?
+  created_by     String
+  studio         Studio   @relation(fields: [studio_id], references: [id])
+}
+
+model Booking {
+  id               String        @id @default(uuid())
+  studio_id        String
+  user_id          String?
+  user_details_id  String?
+  status           BookingStatus
+  start_datetime   DateTime
+  end_datetime     DateTime
+  timezone         String
+  total_price      Decimal       @db.Decimal(10, 2)
+  currency         String        @default("USD")
+  pricing_snapshot Json
+  email_status     String        @default("pending")
+  email_sent_at    DateTime?
+  email_message_id String?
+  created_at       DateTime      @default(now())
+  updated_at       DateTime      @updatedAt
+  studio           Studio        @relation(fields: [studio_id], references: [id])
+  user_details     UserDetails?  @relation(fields: [user_details_id], references: [id])
+  user             User?         @relation(fields: [user_id], references: [id])
+  email_logs       EmailLog[]
+  payments         Payment[]
+
+  @@index([studio_id, start_datetime, end_datetime])
+  @@index([status])
+  @@index([email_status])
+}
+
+model BookingLock {
+  id             String   @id @default(uuid())
+  studio_id      String
+  start_datetime DateTime
+  end_datetime   DateTime
+  expires_at     DateTime
+  lock_token     String   @unique @default(uuid())
+  created_at     DateTime @default(now())
+  studio         Studio   @relation(fields: [studio_id], references: [id])
+}
+
+model PricingRule {
+  id          String          @id @default(uuid())
+  studio_id   String
+  rule_type   PricingRuleType
+  start_time  String?
+  end_time    String?
+  day_of_week Int?
+  price       Decimal         @db.Decimal(10, 2)
+  currency    String          @default("USD")
+  priority    Int             @default(0)
+  studio      Studio          @relation(fields: [studio_id], references: [id])
+}
+
+model Payment {
+  id           String        @id @default(uuid())
+  booking_id   String
+  provider     String
+  status       PaymentStatus
+  amount       Decimal       @db.Decimal(10, 2)
+  currency     String        @default("USD")
+  provider_ref String
+  created_at   DateTime      @default(now())
+  booking      Booking       @relation(fields: [booking_id], references: [id])
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  phone         String?
+  role          UserRole  @default(GUEST)
+  created_at    DateTime  @default(now())
+  password_hash String?
+  bookings      Booking[]
+}
+
+model UserDetails {
+  id                   String    @id @default(uuid())
+  full_name            String
+  email                String
+  phone                String
+  company              String?
+  special_requirements String?
+  created_at           DateTime  @default(now())
+  updated_at           DateTime  @updatedAt
+  bookings             Booking[]
+
+  @@index([email])
+}
+
+model EmailLog {
+  id              String    @id @default(uuid())
+  booking_id      String
+  email_type      String
+  recipient_email String
+  status          String
+  message_id      String?
+  error_message   String?
+  retry_count     Int       @default(0)
+  sent_at         DateTime?
+  created_at      DateTime  @default(now())
+  booking         Booking   @relation(fields: [booking_id], references: [id])
+
+  @@index([booking_id])
+  @@index([status])
+  @@index([email_type])
+}
+
+model AdminUser {
+  id            String    @id @default(uuid())
+  username      String    @unique
+  email         String    @unique
+  password_hash String
+  role          AdminRole @default(ADMIN)
+  is_active     Boolean   @default(true)
+  last_login    DateTime?
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+
+  @@index([username])
+  @@index([email])
+}
+
+model Content {
+  id         String      @id @default(uuid())
+  type       ContentType
+  data       Json
+  version    Int         @default(1)
+  is_active  Boolean     @default(true)
+  created_at DateTime    @default(now())
+  updated_at DateTime    @updatedAt
+
+  @@unique([type, is_active])
+  @@index([type])
+}
+
+model Enquiry {
+  id           String        @id @default(uuid())
+  name         String
+  email        String
+  phone        String
+  subject      String
+  message      String
+  status       EnquiryStatus @default(NEW)
+  source       String?
+  ip_address   String?
+  user_agent   String?
+  submitted_at DateTime      @default(now())
+  updated_at   DateTime      @updatedAt
+
+  @@index([email])
+  @@index([status])
+  @@index([submitted_at])
+}
+
+model Project {
+  id         String   @id @default(uuid())
+  type       String
+  category   String[]
+  brand      String
+  name       String
+  year       String
+  media_url  String
+  thumbnail  String?
+  is_active  Boolean  @default(true)
+  order      Int      @default(0)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@index([is_active])
+  @@index([order])
+}
+
+model GoldenHourSet {
+  id          String   @id @default(uuid())
+  name        String
+  category    String
+  theme       String
+  description String?
+  price       Decimal? @db.Decimal(10, 2)
+  price_note  String?  @default("per hour")
+  image_url   String?
+  bts_video   String?
+  dimensions  String?
+  props       String[] @default([])
+  coords_x    Int      @default(0)
+  coords_y    Int      @default(0)
+  coords_w    Int      @default(100)
+  coords_h    Int      @default(100)
+  is_active   Boolean  @default(true)
+  order       Int      @default(0)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  @@index([is_active])
   @@index([order])
 }
 
@@ -44,73 +266,6 @@ enum StudioStatus {
   ACTIVE
   MAINTENANCE
   INACTIVE
-}
-
-// 4.2 studio_spaces
-model StudioSpace {
-  id         String   @id @default(uuid())
-  studio_id  String
-  name       String
-  capacity   Int
-  created_at DateTime @default(now())
-
-  studio Studio @relation(fields: [studio_id], references: [id])
-}
-
-// 4.3 availability_rules
-// Defines recurring availability, not bookings.
-model AvailabilityRule {
-  id          String  @id @default(uuid())
-  studio_id   String
-  day_of_week Int     // 0-6 (Sun-Sat)
-  start_time  String  // HH:MM
-  end_time    String  // HH:MM
-  is_active   Boolean @default(true)
-
-  studio Studio @relation(fields: [studio_id], references: [id])
-}
-
-// 4.4 blackout_periods
-// Hard blocks (maintenance, events, admin locks).
-model BlackoutPeriod {
-  id             String   @id @default(uuid())
-  studio_id      String
-  start_datetime DateTime
-  end_datetime   DateTime
-  reason         String?
-  created_by     String   // Admin ID
-
-  studio Studio @relation(fields: [studio_id], references: [id])
-}
-
-// 4.5 bookings (CORE TABLE)
-model Booking {
-  id               String        @id @default(uuid())
-  studio_id        String
-  user_id          String?       // Nullable for guest
-  user_details_id  String?       // Foreign key to user_details
-  status           BookingStatus
-  start_datetime   DateTime
-  end_datetime     DateTime
-  timezone         String
-  total_price      Decimal       @db.Decimal(10, 2)
-  currency         String        @default("USD")
-  pricing_snapshot Json          // Stores the exact calculation used
-  email_status     String        @default("pending") // pending, sent, failed, delivered
-  email_sent_at    DateTime?     // When email was sent
-  email_message_id String?       // Email service message ID
-  created_at       DateTime      @default(now())
-  updated_at       DateTime      @updatedAt
-
-  studio       Studio       @relation(fields: [studio_id], references: [id])
-  user         User?        @relation(fields: [user_id], references: [id])
-  user_details UserDetails? @relation(fields: [user_details_id], references: [id])
-  payments     Payment[]
-  email_logs   EmailLog[]
-
-  @@index([studio_id, start_datetime, end_datetime])
-  @@index([status])
-  @@index([email_status])
 }
 
 enum BookingStatus {
@@ -122,36 +277,6 @@ enum BookingStatus {
   COMPLETED
 }
 
-// 4.6 booking_locks (ANTI-DOUBLE-BOOKING)
-// This is what most people miss.
-// Rules: TTL based, Automatically expires, Cleared on confirmation or expiration.
-model BookingLock {
-  id             String   @id @default(uuid())
-  studio_id      String
-  start_datetime DateTime
-  end_datetime   DateTime
-  expires_at     DateTime
-  lock_token     String   @unique @default(uuid()) // The key to confirm
-  created_at     DateTime @default(now())
-
-  studio Studio @relation(fields: [studio_id], references: [id])
-}
-
-// 4.7 pricing_rules
-model PricingRule {
-  id          String          @id @default(uuid())
-  studio_id   String
-  rule_type   PricingRuleType
-  start_time  String?         // HH:MM
-  end_time    String?         // HH:MM
-  day_of_week Int?            // 0-6
-  price       Decimal         @db.Decimal(10, 2)
-  currency    String          @default("USD")
-  priority    Int             @default(0) // Higher priority overrides lower
-
-  studio Studio @relation(fields: [studio_id], references: [id])
-}
-
 enum PricingRuleType {
   HOURLY
   HALF_DAY
@@ -161,20 +286,6 @@ enum PricingRuleType {
   SEASONAL
 }
 
-// 4.8 payments
-model Payment {
-  id           String        @id @default(uuid())
-  booking_id   String
-  provider     String        // stripe, razorpay, etc.
-  status       PaymentStatus
-  amount       Decimal       @db.Decimal(10, 2)
-  currency     String        @default("USD")
-  provider_ref String        // Payment Intent ID
-  created_at   DateTime      @default(now())
-
-  booking Booking @relation(fields: [booking_id], references: [id])
-}
-
 enum PaymentStatus {
   INITIATED
   SUCCESS
@@ -182,88 +293,10 @@ enum PaymentStatus {
   REFUNDED
 }
 
-// 4.9 users
-model User {
-  id             String   @id @default(uuid())
-  email          String   @unique
-  phone          String?
-  password_hash  String?
-  role           UserRole @default(GUEST)
-  created_at     DateTime @default(now())
-
-  bookings Booking[]
-}
-
 enum UserRole {
   GUEST
   CUSTOMER
   ADMIN
-}
-
-// User details table for comprehensive user information
-model UserDetails {
-  id                   String   @id @default(uuid())
-  full_name            String
-  email                String
-  phone                String
-  company              String?
-  special_requirements String?
-  created_at           DateTime @default(now())
-  updated_at           DateTime @updatedAt
-
-  bookings Booking[]
-
-  @@index([email])
-}
-
-// Email logs table for delivery tracking
-model EmailLog {
-  id              String   @id @default(uuid())
-  booking_id      String
-  email_type      String   // confirmation, reminder, cancellation, etc.
-  recipient_email String
-  status          String   // pending, sent, delivered, failed, bounced
-  message_id      String?  // Email service message ID
-  error_message   String?  // Error details if failed
-  retry_count     Int      @default(0)
-  sent_at         DateTime?
-  created_at      DateTime @default(now())
-
-  booking Booking @relation(fields: [booking_id], references: [id])
-
-  @@index([booking_id])
-  @@index([status])
-  @@index([email_type])
-}
-
-// Admin User for admin panel authentication
-model AdminUser {
-  id             String   @id @default(uuid())
-  username       String   @unique
-  email          String   @unique
-  password_hash  String
-  role           AdminRole @default(ADMIN)
-  is_active      Boolean  @default(true)
-  last_login     DateTime?
-  created_at     DateTime @default(now())
-  updated_at     DateTime @updatedAt
-
-  @@index([username])
-  @@index([email])
-}
-
-// Content Management (for website content like hero, about, contact, services)
-model Content {
-  id        String   @id @default(uuid())
-  type      ContentType
-  data      Json
-  version   Int      @default(1)
-  is_active Boolean  @default(true)
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
-
-  @@unique([type, is_active])
-  @@index([type])
 }
 
 enum ContentType {
@@ -273,26 +306,7 @@ enum ContentType {
   SERVICES
   FOOTER
   SEO
-}
-
-// Enquiries from website contact form
-model Enquiry {
-  id                String            @id @default(uuid())
-  name              String
-  email             String
-  phone             String
-  subject           String
-  message           String
-  status            EnquiryStatus     @default(NEW)
-  source            String?           // website, instagram, etc.
-  ip_address        String?
-  user_agent        String?
-  submitted_at      DateTime          @default(now())
-  updated_at        DateTime          @updatedAt
-
-  @@index([email])
-  @@index([status])
-  @@index([submitted_at])
+  GOLDEN_HOUR
 }
 
 enum AdminRole {
@@ -308,23 +322,4 @@ enum EnquiryStatus {
   REPLIED
   CLOSED
   SPAM
-}
-
-// 4.10 projects
-model Project {
-  id          String   @id @default(uuid())
-  type        String   // 'image' or 'video'
-  category    String[] // e.g. ['FASHION', 'LIFESTYLE']
-  brand       String   // e.g. 'PUNJAB FASHION WEEK'
-  name        String   // maps to "project" in UI e.g. 'RUNWAY'
-  year        String
-  media_url   String
-  thumbnail   String?
-  is_active   Boolean  @default(true)
-  order       Int      @default(0)
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
-
-  @@index([is_active])
-  @@index([order])
 }

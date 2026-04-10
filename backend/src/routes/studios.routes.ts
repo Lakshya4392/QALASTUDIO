@@ -3,6 +3,7 @@ import prisma from '../config/db';
 import { PricingService } from '../domains/pricing/pricing.service';
 import { authenticateToken } from '../middleware/auth.middleware';
 import { cacheMiddleware, invalidateCache } from '../middleware/cache.middleware';
+import { studioSchema } from '../validators/schemas';
 
 const router = Router();
 
@@ -167,25 +168,21 @@ router.get('/:id', cacheMiddleware(60), async (req: Request, res: Response) => {
  */
 router.post('/', authenticateToken, async (req: Request, res: Response) => {
   try {
-    const {
-      name, slug, tagline, description, price, price_note, image_url,
-      is_active = true, order = 0,
-      min_booking_duration_minutes = 60, max_booking_duration_hours = 8,
-      features = [],
-    } = req.body;
+    const validatedData = studioSchema.parse(req.body);
+    const { name, slug, price } = validatedData;
 
     const studioSlug = slug || name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-    const numericPrice = price ? parseFloat(String(price).replace(/[^0-9.]/g, '')) : 5000;
+    const numericPrice = price || 5000;
 
     const studio = await prisma.studio.create({
       data: {
-        name, slug: studioSlug, tagline, description,
-        price: numericPrice, price_note, image_url,
-        is_active, order, min_booking_duration_minutes, max_booking_duration_hours, features,
+        ...validatedData,
+        slug: studioSlug,
+        price: numericPrice,
         // Auto-create availability rules: open every day 8am-10pm
         availability_rules: {
           create: [0,1,2,3,4,5,6].map(day => ({
-            day_of_week: day, start_time: '08:00', end_time: '22:00', is_active: true
+            day_of_week: day, start_time: '06:00', end_time: '00:00', is_active: true
           }))
         },
         // Auto-create hourly pricing rule from the price field
@@ -200,11 +197,12 @@ router.post('/', authenticateToken, async (req: Request, res: Response) => {
       }
     });
 
-    invalidateCache('/api/studios');
-    invalidateCache('/api/studios/');
-
+    invalidateCache('/api/studios*');
     return res.json({ success: true, studio });
-  } catch (error) {
+  } catch (error: any) {
+    if (error.name === 'ZodError') {
+      return res.status(400).json({ error: 'Validation failed', details: error.errors });
+    }
     console.error('Error creating studio:', error);
     return res.status(500).json({ error: 'Failed to create studio' });
   }
@@ -255,54 +253,37 @@ router.post('/', authenticateToken, async (req: Request, res: Response) => {
 router.put('/:id', authenticateToken, async (req: Request, res: Response) => {
   try {
     const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id as string;
-    const {
-      name,
-      tagline,
-      description,
-      price,
-      price_note,
-      image_url,
-      is_active,
-      order,
-      min_booking_duration_minutes,
-      max_booking_duration_hours,
-      features
-    } = req.body;
-
-    const numericPrice = price ? parseFloat(String(price).replace(/[^0-9.]/g, '')) : undefined;
+    const validatedData = studioSchema.partial().parse(req.body);
+    const { price } = validatedData;
 
     const studio = await prisma.studio.update({
       where: { id },
-      data: {
-        name, tagline, description,
-        price: numericPrice,
-        price_note, image_url, is_active, order,
-        min_booking_duration_minutes, max_booking_duration_hours, features
-      }
+      data: validatedData
     });
 
     // If price changed, update the HOURLY pricing rule too
-    if (numericPrice !== undefined) {
+    if (price !== undefined && price !== null) {
       const existingRule = await prisma.pricingRule.findFirst({
         where: { studio_id: id, rule_type: 'HOURLY' }
       });
       if (existingRule) {
         await prisma.pricingRule.update({
           where: { id: existingRule.id },
-          data: { price: numericPrice }
+          data: { price }
         });
       } else {
         await prisma.pricingRule.create({
-          data: { studio_id: id, rule_type: 'HOURLY', price: numericPrice, currency: 'INR', priority: 0 }
+          data: { studio_id: id, rule_type: 'HOURLY', price, currency: 'INR', priority: 0 }
         });
       }
     }
 
-    invalidateCache('/api/studios');
-    invalidateCache('/api/studios/');
-
+    invalidateCache('/api/studios*');
     return res.json({ success: true, studio });
-  } catch (error) {
+  } catch (error: any) {
+    if (error.name === 'ZodError') {
+      return res.status(400).json({ error: 'Validation failed', details: error.errors });
+    }
     console.error('Error updating studio:', error);
     return res.status(500).json({ error: 'Failed to update studio' });
   }
@@ -336,8 +317,7 @@ router.delete('/:id', authenticateToken, async (req: Request, res: Response) => 
       where: { id }
     });
 
-    invalidateCache('/api/studios');
-    invalidateCache('/api/studios/');
+    invalidateCache('/api/studios*');
 
     return res.json({ success: true, message: 'Studio deleted' });
   } catch (error) {
@@ -383,8 +363,7 @@ router.post('/:id/toggle', authenticateToken, async (req: Request, res: Response
       data: { is_active: !studio.is_active }
     });
 
-    invalidateCache('/api/studios');
-    invalidateCache('/api/studios/');
+    invalidateCache('/api/studios*');
 
     return res.json({ success: true, studio: updated });
   } catch (error) {

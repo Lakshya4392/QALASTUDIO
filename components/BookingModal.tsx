@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { api, BookingHoldResponse, AvailabilitySlot, AvailabilityRange } from '../services/api';
 import { UserDetailsForm, UserDetails } from './UserDetailsForm';
 import { useContent } from '../contexts/ContentContext';
+import { useUserAuth } from '../contexts/UserAuthContext';
 
 const API_BASE = import.meta.env.VITE_API_URL || import.meta.env.API_URL || 'http://localhost:3001/api';
 
@@ -100,6 +101,7 @@ type BookingStep = 'datetime' | 'suggestions' | 'details' | 'payment' | 'confirm
 
 const BookingModal: React.FC<BookingModalProps> = ({ studioId, studioName, onClose }) => {
     const { content } = useContent();
+    const { user } = useUserAuth();
     const contact = content.contact;
     const [step, setStep] = useState<BookingStep>('datetime');
     const [date, setDate] = useState('');
@@ -115,7 +117,47 @@ const BookingModal: React.FC<BookingModalProps> = ({ studioId, studioName, onClo
     const [emailStatus, setEmailStatus] = useState<'pending' | 'sent' | 'failed'>('pending');
     const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'upi'>('card');
     const [bookingId, setBookingId] = useState<string | null>(null);
+    const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
     const today = new Date().toISOString().split('T')[0];
+
+    // Real-time slot polling — refreshes every 10s while on datetime step
+    const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const currentDateRef = useRef(date);
+    const currentDurationRef = useRef(duration);
+    currentDateRef.current = date;
+    currentDurationRef.current = duration;
+
+    useEffect(() => {
+        if (step === 'datetime' && date && availableSlots.length > 0) {
+            pollRef.current = setInterval(() => {
+                silentRefreshSlots(currentDateRef.current, currentDurationRef.current);
+            }, 10000);
+        }
+        return () => { if (pollRef.current) clearInterval(pollRef.current); };
+    }, [step, date, availableSlots.length]);
+
+    // Silent refresh — updates slots without showing loading spinner
+    const silentRefreshSlots = async (selectedDate: string, durationHours: string) => {
+        if (!selectedDate) return;
+        try {
+            const res = await fetch(`${API_BASE}/availability/slots?studio_id=${studioId}&date=${selectedDate}&duration_hours=${durationHours}`);
+            const data = await res.json();
+            if (!res.ok) return;
+            const newSlots = data.slots || [];
+            setAvailableSlots(newSlots);
+            setLastRefreshed(new Date());
+            // If selected slot is no longer available, deselect it
+            setSelectedSlot(prev => {
+                if (!prev) return prev;
+                const stillAvailable = newSlots.some((s: any) => s.start === prev.start);
+                if (!stillAvailable) {
+                    setError('Your selected slot was just taken. Please choose another.');
+                    return null;
+                }
+                return prev;
+            });
+        } catch { /* silent */ }
+    };
 
     const formatTimeOnly = (isoString: string) => {
       return new Date(isoString).toLocaleTimeString('en-IN', {
@@ -132,11 +174,14 @@ const BookingModal: React.FC<BookingModalProps> = ({ studioId, studioName, onClo
         setAvailableSlots([]);
         setSelectedSlot(null);
         setError('');
+        // Stop any existing poll
+        if (pollRef.current) clearInterval(pollRef.current);
         try {
             const res = await fetch(`${API_BASE}/availability/slots?studio_id=${studioId}&date=${selectedDate}&duration_hours=${durationHours}`);
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Failed to fetch slots');
             setAvailableSlots(data.slots || []);
+            setLastRefreshed(new Date());
             if ((data.slots || []).length === 0) {
                 setError('No available slots on this date. Please try another date.');
             }
@@ -232,6 +277,19 @@ const BookingModal: React.FC<BookingModalProps> = ({ studioId, studioName, onClo
         setUserDetails(details);
         setStep('payment');
     };
+
+    // Pre-fill from logged-in user when entering details step
+    useEffect(() => {
+        if (step === 'details' && user && !userDetails) {
+            setUserDetails({
+                fullName: user.fullName || '',
+                email: user.email || '',
+                phone: user.phone || '',
+                company: '',
+                specialRequirements: '',
+            });
+        }
+    }, [step]);
 
     const handlePaymentConfirm = async () => {
         if (!holdData || !userDetails) return;
@@ -431,9 +489,15 @@ const BookingModal: React.FC<BookingModalProps> = ({ studioId, studioName, onClo
                                         <p className="text-xs font-black uppercase tracking-widest text-neutral-500">
                                             {availableSlots.length} slots available on {new Date(date + 'T00:00:00').toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
                                         </p>
-                                        {selectedSlot && (
-                                            <span className="text-xs font-bold text-green-600 uppercase tracking-wider">✓ Slot selected</span>
-                                        )}
+                                        <div className="flex items-center gap-2">
+                                            {selectedSlot && (
+                                                <span className="text-xs font-bold text-green-600 uppercase tracking-wider">✓ Slot selected</span>
+                                            )}
+                                            <span className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest text-neutral-400">
+                                                <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                                                Live · updates every 10s
+                                            </span>
+                                        </div>
                                     </div>
                                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-64 overflow-y-auto pr-1">
                                         {availableSlots.map((slot, idx) => {
@@ -821,7 +885,7 @@ const BookingModal: React.FC<BookingModalProps> = ({ studioId, studioName, onClo
                                         <p className="text-blue-900 text-sm">
                                           <strong>View your bookings anytime:</strong>{' '}
                                           <a
-                                            href={`/my-bookings?email=${encodeURIComponent(userDetails.email)}`}
+                                            href="/my-bookings"
                                             className="font-bold underline hover:no-underline"
                                           >
                                             Click here to see all your reservations

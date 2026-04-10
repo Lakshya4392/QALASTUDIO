@@ -6,7 +6,7 @@ import ServiceGrid from '../components/ServiceGrid';
 import VirtualProduction from '../components/VirtualProduction';
 import Hospitality from '../components/Hospitality';
 import EventSpaces from '../components/EventSpaces';
-import RecentProductions from '../components/RecentProductions';
+import ProjectsCarousel from '../components/ProjectsCarousel';
 
 const HomePage: React.FC = () => {
   return (
@@ -27,11 +27,14 @@ const HomePage: React.FC = () => {
       <VirtualProduction />
       <Hospitality />
       <EventSpaces />
-      <RecentProductions onNavigate={(page: string) => {
-        const path = page === 'home' ? '/' : `/${page}`;
-        window.location.pathname = path;
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }} />
+      <ProjectsCarousel
+        title="Recent Productions"
+        onNavigate={(page: string) => {
+          const path = page === 'home' ? '/' : `/${page}`;
+          window.location.pathname = path;
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+      />
     </>
   );
 };

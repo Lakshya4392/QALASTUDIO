@@ -12,7 +12,7 @@ services:
       - key: PORT
         value: 10000
       - key: DATABASE_URL
-        fromConfig: DATABASE_URL
+        sync: false
       - key: FRONTEND_URL
         value: https://qalastudio.vercel.app
       - key: JWT_SECRET
@@ -35,3 +35,5 @@ services:
         sync: false
       - key: JWT_EXPIRES_IN
         value: "7d"
+      - key: RENDER_EXTERNAL_URL
+        value: https://qalastudio.onrender.com

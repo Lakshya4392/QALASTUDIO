@@ -11,7 +11,8 @@ import {
   LogOut,
   Menu,
   X,
-  ChevronRight
+  ChevronRight,
+  Sun
 } from 'lucide-react';
 
 const AdminLayout: React.FC = () => {
@@ -24,6 +25,7 @@ const AdminLayout: React.FC = () => {
     { path: '/admin/dashboard', icon: LayoutDashboard, label: 'DASHBOARD' },
     { path: '/admin/bookings', icon: Calendar, label: 'BOOKINGS' },
     { path: '/admin/studios', icon: Building2, label: 'STUDIOS' },
+    { path: '/admin/golden-hour', icon: Sun, label: 'GOLDEN HOUR' },
     { path: '/admin/projects', icon: Image, label: 'PROJECTS' },
     { path: '/admin/enquiries', icon: MessageSquare, label: 'ENQUIRIES' },
     { path: '/admin/content', icon: Image, label: 'CONTENT' },

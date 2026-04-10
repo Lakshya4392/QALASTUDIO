@@ -93,7 +93,14 @@ router.get('/images', authenticateToken, async (req: Request, res: Response) => 
       cloudinary.api
         .resources_by_asset_folder(folder, { resource_type: 'image', max_results: 100 })
         .then(resolve)
-        .catch(reject);
+        .catch((err) => {
+          // If folder doesn't exist yet, it's not a server error, just return empty list
+          if (err.error?.http_code === 404 || err.message?.includes('Folder doesn\'t exist')) {
+            resolve({ resources: [] });
+          } else {
+            reject(err);
+          }
+        });
     });
 
     const images = (result.resources || []).map((img: any) => ({

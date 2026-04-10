@@ -31,6 +31,7 @@ const AdminProjectsPage = lazy(() => import('./components/admin/AdminProjectsPag
 const AdminEnquiriesPage = lazy(() => import('./components/admin/AdminEnquiriesPage'));
 const AdminContentPage = lazy(() => import('./components/admin/AdminContentPage'));
 const AdminSettingsPage = lazy(() => import('./components/admin/AdminSettingsPage'));
+const AdminGoldenHourPage = lazy(() => import('./components/admin/AdminGoldenHourPage'));
 
 // Protected Route Component
 const ProtectedAdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -118,14 +119,11 @@ function App() {
 
                 {/* Admin Routes */}
                 <Route path="/admin/login" element={<AdminLogin />} />
-                <Route
-                  path="/admin"
-                  element={
-                    <ProtectedAdminRoute>
-                      <AdminLayout />
-                    </ProtectedAdminRoute>
-                  }
-                >
+                <Route path="/admin" element={
+                  <ProtectedAdminRoute>
+                    <AdminLayout />
+                  </ProtectedAdminRoute>
+                }>
                   <Route index element={<Navigate to="/admin/dashboard" replace />} />
                   <Route path="dashboard" element={<AdminDashboard />} />
                   <Route path="bookings" element={<AdminBookingsPage />} />
@@ -133,6 +131,7 @@ function App() {
                   <Route path="projects" element={<AdminProjectsPage />} />
                   <Route path="enquiries" element={<AdminEnquiriesPage />} />
                   <Route path="content" element={<AdminContentPage />} />
+                  <Route path="golden-hour" element={<AdminGoldenHourPage />} />
                   <Route path="settings" element={<AdminSettingsPage />} />
                 </Route>
 

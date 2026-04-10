@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useUserAuth } from '../contexts/UserAuthContext';
-import { User, LogOut } from 'lucide-react';
+import { User, LogOut, CalendarDays, ChevronDown } from 'lucide-react';
 
 const Navbar: React.FC = () => {
   const navigate = useNavigate();
@@ -9,6 +9,19 @@ const Navbar: React.FC = () => {
   const { isAuthenticated, user, logout, isLoading } = useUserAuth();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
+
+  // Close profile dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+        setProfileOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -40,7 +53,6 @@ const Navbar: React.FC = () => {
     { label: 'Services', path: '/services' },
     { label: 'About', path: '/about' },
     { label: 'Contact', path: '/contact' },
-    { label: 'My Bookings', path: '/my-bookings' },
   ];
 
   const isActive = (path: string) => {
@@ -76,43 +88,77 @@ const Navbar: React.FC = () => {
           ))}
         </div>
 
-        {/* CTA Button */}
+        {/* Right side */}
         <div className="flex items-center gap-3">
-          {/* User auth state */}
+
+          {/* Profile icon / dropdown */}
           {!isLoading && (
-            isAuthenticated ? (
-              <div className="hidden sm:flex items-center gap-2">
+            <div className="hidden sm:block relative" ref={profileRef}>
+              {isAuthenticated ? (
+                <>
+                  <button
+                    onClick={() => setProfileOpen(p => !p)}
+                    className={`flex items-center gap-2 px-3 py-2 text-[10px] uppercase font-bold tracking-widest transition-all border rounded-full ${
+                      isScrolled || !isHomepage
+                        ? 'border-black/20 text-black hover:border-black'
+                        : 'border-white/40 text-white hover:border-white'
+                    }`}
+                  >
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-black ${isScrolled || !isHomepage ? 'bg-black text-white' : 'bg-white text-black'}`}>
+                      {(user?.fullName?.[0] || user?.email?.[0] || 'U').toUpperCase()}
+                    </div>
+                    <span className="hidden md:block">{user?.fullName?.split(' ')[0] || 'Account'}</span>
+                    <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${profileOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {/* Dropdown */}
+                  {profileOpen && (
+                    <div className="absolute right-0 top-full mt-2 w-52 bg-white border border-black/10 shadow-xl z-[100] overflow-hidden">
+                      {/* User info */}
+                      <div className="px-4 py-3 border-b border-black/5">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-black truncate">{user?.fullName || 'User'}</p>
+                        <p className="text-[9px] text-neutral-400 truncate mt-0.5">{user?.email}</p>
+                      </div>
+                      <button
+                        onClick={() => { navigate('/profile'); setProfileOpen(false); }}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-black hover:bg-black hover:text-white transition-all"
+                      >
+                        <User className="w-3.5 h-3.5" />
+                        Profile
+                      </button>
+                      <button
+                        onClick={() => { navigate('/my-bookings'); setProfileOpen(false); }}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-black hover:bg-black hover:text-white transition-all"
+                      >
+                        <CalendarDays className="w-3.5 h-3.5" />
+                        My Bookings
+                      </button>
+                      <div className="border-t border-black/5">
+                        <button
+                          onClick={async () => { await logout(); navigate('/'); setProfileOpen(false); }}
+                          className="w-full flex items-center gap-3 px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-neutral-400 hover:bg-neutral-50 hover:text-black transition-all"
+                        >
+                          <LogOut className="w-3.5 h-3.5" />
+                          Sign Out
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
                 <button
-                  onClick={() => navigate('/profile')}
-                  className={`flex items-center gap-2 px-4 py-2 text-[10px] uppercase font-bold tracking-widest transition-all duration-300 border ${
+                  onClick={() => navigate('/login')}
+                  className={`flex items-center gap-2 px-3 py-2 text-[10px] uppercase font-bold tracking-widest transition-all border rounded-full ${
                     isScrolled || !isHomepage
-                      ? 'border-black text-black hover:bg-black hover:text-white'
-                      : 'border-white text-white hover:bg-white hover:text-black'
+                      ? 'border-black/20 text-black hover:border-black hover:bg-black hover:text-white'
+                      : 'border-white/40 text-white hover:border-white hover:bg-white hover:text-black'
                   }`}
                 >
-                  <User className="w-3 h-3" />
-                  {user?.fullName?.split(' ')[0] || 'Profile'}
+                  <User className="w-3.5 h-3.5" />
+                  Sign In
                 </button>
-                <button
-                  onClick={async () => { await logout(); navigate('/'); }}
-                  className={`p-2 transition-all ${isScrolled || !isHomepage ? 'text-black hover:text-neutral-500' : 'text-white hover:text-white/60'}`}
-                  title="Logout"
-                >
-                  <LogOut className="w-4 h-4" />
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => navigate('/login')}
-                className={`hidden sm:block px-4 py-2 text-[10px] uppercase font-bold tracking-widest transition-all duration-300 border ${
-                  isScrolled || !isHomepage
-                    ? 'border-black text-black hover:bg-black hover:text-white'
-                    : 'border-white text-white hover:bg-white hover:text-black'
-                }`}
-              >
-                Sign In
-              </button>
-            )
+              )}
+            </div>
           )}
 
           <button
@@ -179,6 +225,12 @@ const Navbar: React.FC = () => {
                   className="w-full bg-white border-2 border-black text-black py-4 text-xs font-bold uppercase tracking-[0.3em] hover:bg-neutral-50 transition-all"
                 >
                   My Profile
+                </button>
+                <button
+                  onClick={() => { navigate('/my-bookings'); setIsMenuOpen(false); }}
+                  className="w-full bg-white border-2 border-black text-black py-4 text-xs font-bold uppercase tracking-[0.3em] hover:bg-neutral-50 transition-all"
+                >
+                  My Bookings
                 </button>
                 <button
                   onClick={async () => { await logout(); navigate('/'); setIsMenuOpen(false); }}

@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import prisma from '../config/db';
 import { authenticateToken } from '../middleware/auth.middleware';
 import { cacheMiddleware, invalidateCache } from '../middleware/cache.middleware';
+import { projectSchema } from '../validators/schemas';
 
 const router = Router();
 
@@ -27,24 +28,18 @@ router.get('/', cacheMiddleware(60), async (req: Request, res: Response) => {
 // Create project
 router.post('/', authenticateToken, async (req: Request, res: Response) => {
   try {
-    const {
-      type, brand, name, year, category = [],
-      media_url, thumbnail,
-      is_active = true, order = 0
-    } = req.body;
+    const validatedData = projectSchema.parse(req.body);
 
     const project = await prisma.project.create({
-      data: {
-        type, brand, name, year, category,
-        media_url, thumbnail, is_active, order
-      }
+      data: validatedData
     });
 
-    invalidateCache('/api/projects');
-    invalidateCache('/api/projects/');
-
+    invalidateCache('/api/projects*');
     return res.json({ success: true, project });
-  } catch (error) {
+  } catch (error: any) {
+    if (error.name === 'ZodError') {
+      return res.status(400).json({ error: 'Validation failed', details: error.errors });
+    }
     console.error('Error creating project:', error);
     return res.status(500).json({ error: 'Failed to create project' });
   }
@@ -54,24 +49,19 @@ router.post('/', authenticateToken, async (req: Request, res: Response) => {
 router.put('/:id', authenticateToken, async (req: Request, res: Response) => {
   try {
     const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-    const {
-      type, brand, name, year, category,
-      media_url, thumbnail, is_active, order
-    } = req.body;
+    const validatedData = projectSchema.partial().parse(req.body);
 
     const project = await prisma.project.update({
       where: { id: String(id) },
-      data: {
-        type, brand, name, year, category,
-        media_url, thumbnail, is_active, order
-      }
+      data: validatedData
     });
 
-    invalidateCache('/api/projects');
-    invalidateCache('/api/projects/');
-
+    invalidateCache('/api/projects*');
     return res.json({ success: true, project });
-  } catch (error) {
+  } catch (error: any) {
+    if (error.name === 'ZodError') {
+      return res.status(400).json({ error: 'Validation failed', details: error.errors });
+    }
     console.error('Error updating project:', error);
     return res.status(500).json({ error: 'Failed to update project' });
   }
@@ -85,8 +75,7 @@ router.delete('/:id', authenticateToken, async (req: Request, res: Response) => 
       where: { id: String(id) }
     });
 
-    invalidateCache('/api/projects');
-    invalidateCache('/api/projects/');
+    invalidateCache('/api/projects*');
 
     return res.json({ success: true, message: 'Project deleted' });
   } catch (error) {
@@ -112,8 +101,7 @@ router.post('/:id/toggle', authenticateToken, async (req: Request, res: Response
       data: { is_active: !project.is_active }
     });
 
-    invalidateCache('/api/projects');
-    invalidateCache('/api/projects/');
+    invalidateCache('/api/projects*');
 
     return res.json({ success: true, project: updated });
   } catch (error) {

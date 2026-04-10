@@ -1,0 +1,2 @@
+-- Add GOLDEN_HOUR to ContentType enum
+ALTER TYPE "ContentType" ADD VALUE IF NOT EXISTS 'GOLDEN_HOUR';

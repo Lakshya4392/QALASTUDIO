@@ -44,6 +44,7 @@ import studiosRoutes from './routes/studios.routes';
 import projectsRoutes from './routes/projects.routes';
 import bookingsAdminRoutes from './routes/bookings.admin.routes';
 import uploadRoutes from './routes/upload.routes';
+import goldenHourRoutes from './routes/goldenHour.routes';
 
 dotenv.config();
 
@@ -241,12 +242,15 @@ app.use('/api/projects', generalRateLimit, projectsRoutes);
 // Admin Bookings
 app.use('/api/admin/bookings', authenticateToken, generalRateLimit, bookingsAdminRoutes);
 
+// Golden Hour Sets management
+app.use('/api/golden-hour', generalRateLimit, goldenHourRoutes);
+
 // Image Upload (admin only — auth applied in route)
 app.use('/api/upload', generalRateLimit, uploadRoutes);
 
 // --- Original Booking Routes (Keep for compatibility) ---
 
-// Availability check (free ranges)
+// Availability check (free ranges) — no cache (real-time)
 app.get('/api/availability', async (req: Request, res: Response) => {
   try {
     const { studio_id, start_date, end_date } = req.query;
@@ -265,7 +269,7 @@ app.get('/api/availability', async (req: Request, res: Response) => {
   }
 });
 
-// Discrete bookable slots for a specific date + duration
+// Discrete bookable slots for a specific date + duration — NO CACHE (real-time, reflects locks)
 app.get('/api/availability/slots', async (req: Request, res: Response) => {
   try {
     const { studio_id, date, duration_hours } = req.query;
@@ -287,6 +291,9 @@ app.get('/api/availability/slots', async (req: Request, res: Response) => {
     // Slice each free range into discrete slots of the requested duration
     const slots: { start: string; end: string; price: number; currency: string }[] = [];
 
+    // Collect all slot time ranges first, then batch price calculations
+    const slotRanges: { start: Date; end: Date }[] = [];
+
     for (const range of freeRanges) {
       const rangeStart = new Date(range.start);
       const rangeEnd = new Date(range.end);
@@ -294,30 +301,31 @@ app.get('/api/availability/slots', async (req: Request, res: Response) => {
 
       if (rangeDurationHours < durationHours) continue;
 
-      // Generate slots every 1 hour within this range
       let slotStart = new Date(rangeStart);
       while (true) {
         const slotEnd = new Date(slotStart.getTime() + durationHours * 60 * 60 * 1000);
         if (slotEnd > rangeEnd) break;
-
-        try {
-          const priceData = await pricingService.calculatePrice(
-            String(studio_id), slotStart, slotEnd
-          );
-          slots.push({
-            start: slotStart.toISOString(),
-            end: slotEnd.toISOString(),
-            price: priceData.total,
-            currency: priceData.currency || 'INR',
-          });
-        } catch {
-          // If pricing fails, still show slot without price
-          slots.push({ start: slotStart.toISOString(), end: slotEnd.toISOString(), price: 0, currency: 'INR' });
-        }
-
-        // Move to next slot (1 hour step)
+        slotRanges.push({ start: new Date(slotStart), end: new Date(slotEnd) });
         slotStart = new Date(slotStart.getTime() + 60 * 60 * 1000);
       }
+    }
+
+    // Batch all price calculations in parallel
+    const priceResults = await Promise.all(
+      slotRanges.map(({ start, end }) =>
+        pricingService.calculatePrice(String(studio_id), start, end).catch(() => null)
+      )
+    );
+
+    for (let i = 0; i < slotRanges.length; i++) {
+      const { start, end } = slotRanges[i];
+      const priceData = priceResults[i];
+      slots.push({
+        start: start.toISOString(),
+        end: end.toISOString(),
+        price: priceData?.total ?? 0,
+        currency: priceData?.currency ?? 'INR',
+      });
     }
 
     return res.json({ slots, date: String(date), duration_hours: durationHours });
@@ -335,6 +343,9 @@ app.post('/api/bookings/hold', async (req: Request, res: Response) => {
 
     const price = await pricingService.calculatePrice(studio_id, startDate, endDate);
     const lock = await bookingService.createHold(studio_id, startDate, endDate);
+
+    // Invalidate availability cache for this studio so other users see updated slots immediately
+    invalidateCache(`/api/availability*`);
 
     res.json({ ...lock, pricing_preview: price });
   } catch (error: any) {
@@ -444,7 +455,7 @@ const swaggerDefinition = {
       description: 'Development server',
     },
     {
-      url: process.env.NODE_ENV === 'production' ? 'https://api.qalastudios.com' : undefined,
+      url: process.env.NODE_ENV === 'production' ? 'https://qalastudio.onrender.com' : undefined,
       description: 'Production server',
     },
   ].filter(Boolean),
@@ -506,7 +517,8 @@ export default app;
 
 // Import and start lock cleanup job
 import { startLockCleanupJob } from './utils/lockCleanup';
-import { startCacheCleanup } from './middleware/cache.middleware';
+import { startCacheCleanup, cacheMiddleware, invalidateCache } from './middleware/cache.middleware';
+import { startKeepAlive } from './utils/keepAlive';
 import prisma from './config/db';
 
 let cleanupJobTimer: NodeJS.Timeout | null = null;
@@ -518,6 +530,7 @@ app.listen(PORT, () => {
   try {
     cleanupJobTimer = startLockCleanupJob();
     startCacheCleanup();
+    startKeepAlive();
     logger.info('Server started successfully', { port: PORT, environment: process.env.NODE_ENV });
   } catch (error) {
     console.error('Failed to start cleanup job:', error);

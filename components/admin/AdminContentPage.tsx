@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, CheckCircle, Eye, Image, Type, Phone, Layers, ChevronDown, ChevronUp, FolderCode, Sparkles, Globe } from 'lucide-react';
+import { Save, CheckCircle, Eye, Image, Type, Phone, Layers, ChevronDown, ChevronUp, FolderCode, Sparkles, Globe, Sun } from 'lucide-react';
 import { useContent } from '../../contexts/ContentContext';
 import ImageUpload from './ImageUpload';
 
@@ -65,6 +65,7 @@ const AdminContentPage: React.FC = () => {
   const [services, setServices] = useState<Array<{ id: string; name: string; category: string; img: string; isActive: boolean; expanded?: boolean }>>([]);
   const [uploadedImages, setUploadedImages] = useState<any[]>([]);
 
+
   useEffect(() => {
     const load = async () => {
       setLoading(true);
@@ -110,6 +111,7 @@ const AdminContentPage: React.FC = () => {
         await updateContent('SERVICES', { services: mapped });
         updateSection('services', mapped);
       }
+
       setSaved(t);
       setTimeout(() => setSaved(null), 3000);
       refresh().catch(() => {});
@@ -256,8 +258,7 @@ const AdminContentPage: React.FC = () => {
           )}
 
           {tab === 'services' && (
-            <div className="space-y-8 animate-fade-in">
-              {services.map((svc, i) => (
+            <div className="space-y-8 animate-fade-in">              {services.map((svc, i) => (
                 <div key={svc.id} className={`group bg-white border-2 rounded-[2rem] transition-all duration-500 overflow-hidden ${svc.expanded ? 'border-black shadow-2xl scale-[1.01]' : 'border-black/10 hover:border-black/30'}`}>
                   <div className="p-8 cursor-pointer flex items-center gap-8" onClick={() => {
                     const s = [...services];
@@ -311,6 +312,8 @@ const AdminContentPage: React.FC = () => {
               ))}
             </div>
           )}
+
+
         </div>
 
         {/* Global Save Action Bar */}

@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || import.meta.env.API_URL || 'http://localhost:3001/api';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'https://qalastudio.onrender.com/api';
 
 // Helper to get auth token
 const getToken = () => localStorage.getItem('admin_token');
@@ -94,6 +94,26 @@ export interface StudioOption {
   features: string[];
 }
 
+export interface GoldenHourSet {
+  id: string;
+  name: string;
+  category: string;
+  theme: string;
+  description: string;
+  price: string;
+  price_note: string;
+  image_url: string;
+  bts_video: string;
+  dimensions: string;
+  props: string[];
+  coords_x: number;
+  coords_y: number;
+  coords_w: number;
+  coords_h: number;
+  is_active: boolean;
+  order: number;
+}
+
 // ==================== API OBJECT ====================
 
 export const api = {
@@ -179,10 +199,14 @@ export const api = {
 
   studios: {
     getAll: async () => {
-      return fetchWithAuth('/studios');
+      const res = await fetch(`${API_BASE}/studios`);
+      if (!res.ok) throw new Error('Failed to fetch studios');
+      return res.json();
     },
     getById: async (id: string) => {
-      return fetchWithAuth(`/studios/${id}`);
+      const res = await fetch(`${API_BASE}/studios/${id}`);
+      if (!res.ok) throw new Error('Studio not found');
+      return res.json();
     },
     create: async (data: any) => {
       return fetchWithAuth('/studios', {
@@ -211,9 +235,37 @@ export const api = {
     },
   },
 
+  goldenHour: {
+    getAll: async (activeOnly = false) => {
+      const res = await fetch(`${API_BASE}/golden-hour${activeOnly ? '?active=true' : ''}`);
+      if (!res.ok) throw new Error('Failed to fetch golden hour sets');
+      return res.json();
+    },
+    create: async (data: any) => {
+      return fetchWithAuth('/golden-hour', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+    update: async (id: string, data: any) => {
+      return fetchWithAuth(`/golden-hour/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+    },
+    delete: async (id: string) => {
+      return fetchWithAuth(`/golden-hour/${id}`, { method: 'DELETE' });
+    },
+    toggle: async (id: string) => {
+      return fetchWithAuth(`/golden-hour/${id}/toggle`, { method: 'POST' });
+    },
+  },
+
   projects: {
     getAll: async () => {
-      return fetchWithAuth('/projects');
+      const res = await fetch(`${API_BASE}/projects`);
+      if (!res.ok) throw new Error('Failed to fetch projects');
+      return res.json();
     },
     create: async (data: any) => {
       return fetchWithAuth('/projects', {
@@ -329,6 +381,39 @@ export const api = {
       });
     },
   },
+};
+
+/**
+ * PRODUCTION OPTIMIZATION: Cloudinary Image Transformer
+ * Appends transformation parameters to Cloudinary URLs for fast loading.
+ * @param url The original image URL
+ * @param options Transformation options (width, height, quality, format)
+ */
+export const optimizeCloudinaryUrl = (
+  url: string | null | undefined,
+  options: { width?: number; height?: number; quality?: string; format?: string } = {}
+): string => {
+  if (!url) return '';
+  if (!url.includes('cloudinary.com')) return url;
+
+  // Split URL into parts: base / upload / [transformations] / version / path
+  const parts = url.split('/upload/');
+  if (parts.length !== 2) return url;
+
+  const { width, height, quality = 'auto', format = 'auto' } = options;
+  
+  const transformations = [
+    `f_${format}`,
+    `q_${quality}`,
+  ];
+
+  if (width) transformations.push(`w_${width}`);
+  if (height) transformations.push(`h_${height}`);
+  
+  // Default to limit scale to avoid upscaling
+  transformations.push('c_limit');
+
+  return `${parts[0]}/upload/${transformations.join(',')}/${parts[1]}`;
 };
 
 export default api;

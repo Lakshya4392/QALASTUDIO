@@ -27,9 +27,9 @@ export default defineConfig(({ mode, command }) => {
       },
       plugins,
       define: {
+        // Gemini API key for frontend AI service
         'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
         'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.VITE_API_URL': JSON.stringify(env.VITE_API_URL || env.API_URL || 'http://localhost:3001/api')
       },
       resolve: {
         alias: {
@@ -39,12 +39,24 @@ export default defineConfig(({ mode, command }) => {
       build: {
         rollupOptions: {
             output: {
-                // Ensure clean output for better analysis
                 manualChunks: {
                     vendor: ['react', 'react-dom', 'react-router-dom'],
+                    admin: [
+                      './components/admin/AdminDashboard',
+                      './components/admin/AdminBookingsPage',
+                      './components/admin/AdminStudiosPage',
+                      './components/admin/AdminProjectsPage',
+                      './components/admin/AdminEnquiriesPage',
+                      './components/admin/AdminContentPage',
+                      './components/admin/AdminSettingsPage',
+                      './components/admin/AdminLayout',
+                      './components/admin/AdminLogin',
+                    ],
                 },
             },
         },
+        // Increase chunk size warning limit slightly for admin bundle
+        chunkSizeWarningLimit: 600,
       },
     };
 });

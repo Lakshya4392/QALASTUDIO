@@ -167,9 +167,8 @@ router.put('/:type', authenticateToken, async (req: Request, res: Response) => {
       }
     }
 
-    // Invalidate content cache after update
-    invalidateCache('/api/content');
-    invalidateCache('/api/content/');
+    // Invalidate all content cache patterns (general and type-specific)
+    invalidateCache('/api/content*');
 
     return res.json({ success: true, content });
   } catch (error) {

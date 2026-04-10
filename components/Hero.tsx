@@ -32,6 +32,8 @@ const Hero: React.FC<HeroProps> = ({ onNavigate }) => {
           src="/hero_editorial.png"
           alt="Qala Studios Premium Production"
           className="w-full h-full object-cover object-center"
+          fetchPriority="high"
+          decoding="async"
         />
         {/* Clean gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
