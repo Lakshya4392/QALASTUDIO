@@ -3,7 +3,7 @@ import { Plus, Edit2, Trash2, Power, X, RefreshCw, ChevronDown, ChevronUp, Build
 import { api } from '../../services/api';
 import ImageUpload from './ImageUpload';
 
-const API_BASE = import.meta.env.VITE_API_URL || import.meta.env.API_URL || 'http://localhost:3001/api';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://qalastudio.onrender.com/api';
 
 interface Studio {
   id: string;

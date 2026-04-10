@@ -4,7 +4,7 @@ import SEO from '../components/SEO';
 import { useUserAuth } from '../contexts/UserAuthContext';
 import { Mail, Phone, User, LogOut, CalendarDays, ArrowRight, Loader2, CheckCircle, Clock, XCircle, TrendingUp } from 'lucide-react';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://qalastudio.onrender.com/api';
 
 interface Booking {
   id: string;

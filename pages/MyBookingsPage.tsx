@@ -5,7 +5,7 @@ import { useUserAuth } from '../contexts/UserAuthContext';
 import { Calendar, XCircle, Loader2, ArrowRight, RefreshCw, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import BookingModal from '../components/BookingModal';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://qalastudio.onrender.com/api';
 
 interface Booking {
   id: string;

@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { Upload, X, Image, CheckCircle, Circle, FolderOpen, Sparkles, Layout } from 'lucide-react';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://qalastudio.onrender.com/api';
 
 interface ImageUploadProps {
   value: string;

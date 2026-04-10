@@ -4,7 +4,7 @@ import { api, GoldenHourSet } from '../../services/api';
 import { useContent } from '../../contexts/ContentContext';
 import ImageUpload from './ImageUpload';
 
-const API_BASE = import.meta.env.VITE_API_URL || import.meta.env.API_URL || 'http://localhost:3001/api';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://qalastudio.onrender.com/api';
 
 const Inp: React.FC<React.InputHTMLAttributes<HTMLInputElement>> = (p) => (
   <input {...p} className={`w-full px-5 py-4 border-2 border-black/10 rounded-2xl focus:border-black focus:ring-4 focus:ring-black/5 outline-none text-sm font-bold uppercase tracking-wide transition-all bg-black/5 hover:bg-black/[0.08] ${p.className || ''}`} />

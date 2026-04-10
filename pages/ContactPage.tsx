@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import FadeInSection from '../components/FadeInSection';
 import { useContent } from '../contexts/ContentContext';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://qalastudio.onrender.com/api';
 
 const ContactPage: React.FC = () => {
   const { content } = useContent();

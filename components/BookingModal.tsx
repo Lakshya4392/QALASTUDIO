@@ -4,7 +4,7 @@ import { UserDetailsForm, UserDetails } from './UserDetailsForm';
 import { useContent } from '../contexts/ContentContext';
 import { useUserAuth } from '../contexts/UserAuthContext';
 
-const API_BASE = import.meta.env.VITE_API_URL || import.meta.env.API_URL || 'http://localhost:3001/api';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://qalastudio.onrender.com/api';
 
 // Icon Components
 const IconCalendar: React.FC<{ className?: string }> = ({ className = "w-6 h-6" }) => (

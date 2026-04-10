@@ -3,7 +3,7 @@ import { Save, CheckCircle, Eye, Image, Type, Phone, Layers, ChevronDown, Chevro
 import { useContent } from '../../contexts/ContentContext';
 import ImageUpload from './ImageUpload';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://qalastudio.onrender.com/api';
 
 type Tab = 'hero' | 'about' | 'contact' | 'services';
 
