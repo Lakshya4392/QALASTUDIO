@@ -50,7 +50,7 @@ export const projectSchema = z.object({
   name: z.string(),
   year: z.string(),
   category: z.array(z.string()).optional(),
-  media_url: z.union([z.string().url(), z.literal('')]).transform(v => v === '' ? 'https://placeholder.com' : v),
+  media_url: z.union([z.string().url(), z.literal('')]).transform(v => v === '' ? 'https://placeholder.com/image.jpg' : v),
   thumbnail: z.union([z.string().url(), z.literal('')]).optional().nullable().transform(v => v === '' ? null : v),
   is_active: z.boolean().optional(),
   order: z.number().int().optional(),

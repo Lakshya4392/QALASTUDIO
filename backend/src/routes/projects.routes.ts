@@ -31,7 +31,17 @@ router.post('/', authenticateToken, async (req: Request, res: Response) => {
     const validatedData = projectSchema.parse(req.body);
 
     const project = await prisma.project.create({
-      data: validatedData
+      data: {
+        type: validatedData.type,
+        brand: validatedData.brand,
+        name: validatedData.name,
+        year: validatedData.year,
+        category: validatedData.category || [],
+        media_url: validatedData.media_url || 'https://placeholder.com/image.jpg',
+        thumbnail: validatedData.thumbnail || null,
+        is_active: validatedData.is_active ?? true,
+        order: validatedData.order ?? 0,
+      }
     });
 
     invalidateCache('/api/projects*');
