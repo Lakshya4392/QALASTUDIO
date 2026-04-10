@@ -211,13 +211,17 @@ const AdminGoldenHourPage: React.FC = () => {
     catch (e: any) { alert(`Failed to toggle set: ${e?.message || 'Unknown error'}`); }
   };
 
+  const [metaSaved, setMetaSaved] = useState(false);
+
   const handleMetaSave = async () => {
     setMetaSaving(true);
     try {
       await api.content.update('GOLDEN_HOUR', meta);
-      updateSection('goldenHour', meta);
-      alert('Page editorial updated successfully');
-    } catch (e: any) { alert(`Failed to update page editorial: ${e?.message || 'Unknown error'}`); }
+      updateSection('goldenHour', { ...meta });
+      await refresh();
+      setMetaSaved(true);
+      setTimeout(() => setMetaSaved(false), 3000);
+    } catch (e: any) { alert(`Failed to update: ${e?.message || 'Unknown error'}`); }
     finally { setMetaSaving(false); }
   };
 
@@ -261,7 +265,7 @@ const AdminGoldenHourPage: React.FC = () => {
              </div>
           </div>
           <button onClick={handleMetaSave} disabled={metaSaving} className="px-8 py-3 bg-black text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-xl hover:shadow-xl transition-all disabled:opacity-50">
-             {metaSaving ? 'SAVING...' : 'PUBLISH PAGE UPDATES'}
+             {metaSaving ? 'SAVING...' : metaSaved ? '✓ SAVED' : 'PUBLISH PAGE UPDATES'}
           </button>
         </div>
         <div className="p-10 grid md:grid-cols-2 lg:grid-cols-3 gap-10 bg-black/[0.01]">
