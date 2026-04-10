@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import api, { GoldenHourSet } from '../services/api';
 import FadeInSection from '../components/FadeInSection';
 import { 
     LayoutDashboard, 
@@ -114,12 +115,29 @@ interface ContactContent {
     };
 }
 
+interface Project {
+    id: string;
+    type: string;
+    category: string[];
+    brand: string;
+    name: string;
+    year: string;
+    media_url: string;
+    thumbnail: string | null;
+    is_active: boolean;
+    order: number;
+}
+
 const AdminPage: React.FC = () => {
     const [activeTab, setActiveTab] = useState('Dashboard');
-    const [bookings, setBookings] = useState<Booking[]>([]);
+    const [bookings, setBookings] = useState<any[]>([]);
     const [studios, setStudios] = useState<Studio[]>([]);
     const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
-    const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+    const [projects, setProjects] = useState<Project[]>([]);
+    const [goldenHourSets, setGoldenHourSets] = useState<GoldenHourSet[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [selectedBooking, setSelectedBooking] = useState<any | null>(null);
 
     // Content State
     const [heroContent, setHeroContent] = useState<HeroContent>({
@@ -167,188 +185,313 @@ const AdminPage: React.FC = () => {
     const [showStudioForm, setShowStudioForm] = useState(false);
     const [editingStudio, setEditingStudio] = useState<Studio | null>(null);
 
-    // Load data from localStorage on mount
-    useEffect(() => {
-        const savedBookings = localStorage.getItem('admin_bookings');
-        const savedStudios = localStorage.getItem('admin_studios');
-        const savedEnquiries = localStorage.getItem('admin_enquiries');
-        const savedHero = localStorage.getItem('admin_hero');
-        const savedAbout = localStorage.getItem('admin_about');
-        const savedServices = localStorage.getItem('admin_services');
-        const savedContact = localStorage.getItem('admin_contact');
+    const [showProjectForm, setShowProjectForm] = useState(false);
+    const [editingProject, setEditingProject] = useState<Project | null>(null);
+    
+    const [showGHForm, setShowGHForm] = useState(false);
+    const [editingGHSet, setEditingGHSet] = useState<GoldenHourSet | null>(null);
 
-        if (savedBookings) {
-            try { setBookings(JSON.parse(savedBookings)); } catch (e) { console.error('Failed to load bookings:', e); }
-        } else { initializeSampleData(); }
+    // Load data from Backend on mount
+    const refreshAllData = useCallback(async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const [
+                studiosData, 
+                bookingsData, 
+                enquiriesData, 
+                projectsData, 
+                ghSetsData,
+                contentData
+            ] = await Promise.all([
+                api.studios.getAll(),
+                api.bookings.getAll(),
+                api.enquiries.getAll(),
+                api.projects.getAll(),
+                api.goldenHour.getAll(),
+                api.content.getAll()
+            ]);
 
-        if (savedStudios) {
-            try { setStudios(JSON.parse(savedStudios)); } catch (e) { console.error('Failed to load studios:', e); }
-        } else { initializeStudios(); }
+            setStudios(studiosData.map((s: any) => ({
+                id: s.id,
+                name: s.name,
+                tagline: s.tagline || '',
+                description: s.description || '',
+                price: `₹${s.price || 0}`,
+                priceNote: s.price_note || 'per hour',
+                image: s.image_url || '',
+                features: s.features || [],
+                isActive: s.is_active,
+                order: s.order
+            })));
 
-        if (savedEnquiries) {
-            try { setEnquiries(JSON.parse(savedEnquiries)); } catch (e) { console.error('Failed to load enquiries:', e); }
-        } else { initializeEnquiries(); }
+            setBookings(bookingsData.bookings || []);
+            setEnquiries(enquiriesData.enquiries || enquiriesData);
+            setProjects(projectsData);
+            setGoldenHourSets(ghSetsData);
 
-        if (savedHero) {
-            try { setHeroContent(JSON.parse(savedHero)); } catch (e) { console.error('Failed to load hero:', e); }
-        }
-        if (savedAbout) {
-            try { setAboutContent(JSON.parse(savedAbout)); } catch (e) { console.error('Failed to load about:', e); }
-        }
-        if (savedServices) {
-            try { setServices(JSON.parse(savedServices)); } catch (e) { console.error('Failed to load services:', e); }
-        }
-        if (savedContact) {
-            try { setContactContent(JSON.parse(savedContact)); } catch (e) { console.error('Failed to load contact:', e); }
+            // Handle Content
+            const hero = contentData.find((c: any) => c.type === 'HERO');
+            if (hero) setHeroContent(hero.data);
+            
+            const about = contentData.find((c: any) => c.type === 'ABOUT');
+            if (about) setAboutContent(about.data);
+            
+            const servicesCont = contentData.find((c: any) => c.type === 'SERVICES');
+            if (servicesCont) setServices(servicesCont.data.services || []);
+            
+            const contact = contentData.find((c: any) => c.type === 'CONTACT');
+            if (contact) setContactContent(contact.data);
+
+        } catch (err: any) {
+            console.error('Failed to fetch admin data:', err);
+            setError(err.message || 'Failed to load system data');
+        } finally {
+            setIsLoading(false);
         }
     }, []);
 
-    // Save to localStorage whenever data changes
-    useEffect(() => { if (bookings.length > 0) localStorage.setItem('admin_bookings', JSON.stringify(bookings)); }, [bookings]);
-    useEffect(() => { if (studios.length > 0) localStorage.setItem('admin_studios', JSON.stringify(studios)); }, [studios]);
-    useEffect(() => { if (enquiries.length > 0) localStorage.setItem('admin_enquiries', JSON.stringify(enquiries)); }, [enquiries]);
-    useEffect(() => { localStorage.setItem('admin_hero', JSON.stringify(heroContent)); }, [heroContent]);
-    useEffect(() => { localStorage.setItem('admin_about', JSON.stringify(aboutContent)); }, [aboutContent]);
-    useEffect(() => { localStorage.setItem('admin_services', JSON.stringify(services)); }, [services]);
-    useEffect(() => { localStorage.setItem('admin_contact', JSON.stringify(contactContent)); }, [contactContent]);
+    useEffect(() => {
+        refreshAllData();
+    }, [refreshAllData]);
 
-    const initializeSampleData = () => {
-        const sampleBookings: Booking[] = [
-            {
-                id: 'BK-ABC123',
-                studioId: 'qala-studio',
-                studioName: 'Simple Studio Sets',
-                date: '2025-04-15',
-                startTime: '14:00',
-                duration: '2',
-                userDetails: { name: 'Rahul Kumar', email: 'rahul@example.com', phone: '+91 98765 43210', company: 'Creative Agency' },
-                totalAmount: 10000,
-                status: 'confirmed',
-                confirmationCode: 'CONF-XYZ789',
-                bookedAt: new Date().toISOString(),
-                paymentMethod: 'card'
-            },
-            {
-                id: 'BK-DEF456',
-                studioId: 'golden-hour',
-                studioName: 'Golden Hour Studio',
-                date: '2025-04-16',
-                startTime: '16:00',
-                duration: '4',
-                userDetails: { name: 'Priya Sharma', email: 'priya@example.com', phone: '+91 87654 32109' },
-                totalAmount: 32000,
-                status: 'pending',
-                confirmationCode: 'CONF-UVW123',
-                bookedAt: new Date(Date.now() - 3600000).toISOString(),
-                paymentMethod: 'upi'
-            }
-        ];
-        setBookings(sampleBookings);
-    };
-
-    const initializeStudios = () => {
-        const defaultStudios: Studio[] = [
-            {
-                id: 'qala-studio',
-                name: 'Simple Studio Sets',
-                tagline: 'Professional Production Space',
-                description: 'A versatile 3,000 sq ft studio with modular sets, professional lighting rigs, and complete production support.',
-                price: '₹5,000',
-                priceNote: 'per hour',
-                image: 'https://images.unsplash.com/photo-1598425237654-4fc758e50a93?auto=format&fit=crop&q=80&w=1200',
-                features: ['3,000 sq ft space', 'Modular set pieces', '1200 Amps power', 'Hair & makeup stations', 'Client lounge'],
-                isActive: true,
-                order: 1
-            },
-            {
-                id: 'golden-hour',
-                name: 'Golden Hour Studio',
-                tagline: 'Curated Lighting Environments',
-                description: 'Experience the magic of golden hour, any hour. Our signature studio features programmable LED walls.',
-                price: '₹8,000',
-                priceNote: 'per hour',
-                image: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&q=80&w=1200',
-                features: ['LED light walls', 'Programmable scenes', 'Sunrise to sunset', 'Climate controlled', 'Premium finishes'],
-                isActive: true,
-                order: 2
-            }
-        ];
-        setStudios(defaultStudios);
-    };
-
-    const initializeEnquiries = () => {
-        const sampleEnquiries: Enquiry[] = [
-            { id: 'ENQ-001', name: 'Richmond', email: 'richmond@example.com', phone: '+91 98765 43210', subject: 'Equipment Rental', message: 'Need professional camera equipment for a 3-day shoot.', status: 'new', submittedAt: new Date().toISOString() },
-            { id: 'ENQ-002', name: 'Ruhter', email: 'ruhter@example.com', phone: '+91 87654 32109', subject: 'VFX Services', message: 'Looking for VFX magic for our upcoming commercial.', status: 'read', submittedAt: new Date(Date.now() - 86400000).toISOString() }
-        ];
-        setEnquiries(sampleEnquiries);
-    };
 
     // Handlers
-    const handleUpdateBookingStatus = (bookingId: string, newStatus: Booking['status']) => {
-        setBookings(prev => prev.map(booking => booking.id === bookingId ? { ...booking, status: newStatus } : booking));
-        if (selectedBooking?.id === bookingId) setSelectedBooking({ ...selectedBooking, status: newStatus });
-    };
-
-    const handleDeleteBooking = (bookingId: string) => {
-        if (window.confirm('Are you sure you want to delete this booking?')) {
-            setBookings(prev => prev.filter(b => b.id !== bookingId));
-            if (selectedBooking?.id === bookingId) setSelectedBooking(null);
+    const handleUpdateBookingStatus = async (bookingId: string, newStatus: string) => {
+        try {
+            await api.bookings.updateStatus(bookingId, newStatus.toUpperCase());
+            refreshAllData();
+        } catch (err: any) {
+            alert('Failed to update status: ' + err.message);
         }
     };
 
-    const handleUpdateStudio = (studio: Studio) => {
-        setStudios(prev => prev.map(s => s.id === studio.id ? studio : s));
-        setEditingStudio(null); setShowStudioForm(false);
-    };
-
-    const handleAddStudio = (studio: Omit<Studio, 'id' | 'order'>) => {
-        const newStudio: Studio = { ...studio, id: studio.name.toLowerCase().replace(/\s+/g, '-'), order: studios.length + 1 };
-        setStudios(prev => [...prev, newStudio]); setShowStudioForm(false);
-    };
-
-    const handleDeleteStudio = (studioId: string) => {
-        if (window.confirm('Are you sure you want to delete this studio? This will also affect existing bookings.')) {
-            setStudios(prev => prev.filter(s => s.id !== studioId));
+    const handleDeleteBooking = async (bookingId: string) => {
+        if (!window.confirm('Delete this booking?')) return;
+        try {
+            await api.bookings.delete(bookingId);
+            refreshAllData();
+        } catch (err: any) {
+            alert('Delete failed: ' + err.message);
         }
     };
 
-    const handleToggleStudioActive = (studioId: string) => {
-        setStudios(prev => prev.map(s => s.id === studioId ? { ...s, isActive: !s.isActive } : s));
-    };
-
-    const handleUpdateEnquiryStatus = (enquiryId: string, newStatus: Enquiry['status']) => {
-        setEnquiries(prev => prev.map(enq => enq.id === enquiryId ? { ...enq, status: newStatus } : enq));
-    };
-
-    const handleDeleteEnquiry = (enquiryId: string) => {
-        if (window.confirm('Delete this enquiry?')) {
-            setEnquiries(prev => prev.filter(e => e.id !== enquiryId));
+    const handleUpdateStudio = async (studio: Studio) => {
+        try {
+            await api.studios.update(studio.id, {
+                ...studio,
+                image_url: studio.image,
+                is_active: studio.isActive
+            });
+            setEditingStudio(null); 
+            setShowStudioForm(false);
+            refreshAllData();
+        } catch (err: any) {
+            alert('Update failed: ' + err.message);
         }
     };
 
-    const handleSaveHero = () => { alert('Hero content saved!'); setShowContentForm(null); };
-    const handleSaveAbout = () => { alert('About content saved!'); setShowContentForm(null); };
-    const handleSaveContact = () => { alert('Contact content saved!'); setShowContentForm(null); };
-
-    const handleAddService = (service: Omit<ServiceContent, 'id'>) => {
-        const newService: ServiceContent = { ...service, id: Date.now().toString() };
-        setServices(prev => [...prev, newService]); setEditingService(null); setShowContentForm(null);
-    };
-
-    const handleUpdateService = (service: ServiceContent) => {
-        setServices(prev => prev.map(s => s.id === service.id ? service : s));
-        setEditingService(null); setShowContentForm(null);
-    };
-
-    const handleDeleteService = (serviceId: string) => {
-        if (window.confirm('Delete this service?')) {
-            setServices(prev => prev.filter(s => s.id !== serviceId));
+    const handleAddStudio = async (studio: Omit<Studio, 'id' | 'order'>) => {
+        try {
+            await api.studios.create({
+                ...studio,
+                image_url: studio.image,
+                is_active: studio.isActive
+            });
+            setShowStudioForm(false);
+            refreshAllData();
+        } catch (err: any) {
+            alert('Creation failed: ' + err.message);
         }
     };
 
-    const handleToggleServiceActive = (serviceId: string) => {
-        setServices(prev => prev.map(s => s.id === serviceId ? { ...s, isActive: !s.isActive } : s));
+    const handleDeleteStudio = async (studioId: string) => {
+        if (!window.confirm('Delete this studio?')) return;
+        try {
+            await api.studios.delete(studioId);
+            refreshAllData();
+        } catch (err: any) {
+            alert('Delete failed: ' + err.message);
+        }
+    };
+
+    const handleToggleStudioActive = async (studioId: string) => {
+        try {
+            await api.studios.toggle(studioId);
+            refreshAllData();
+        } catch (err: any) {
+            alert('Toggle failed: ' + err.message);
+        }
+    };
+
+    const handleUpdateEnquiryStatus = async (enquiryId: string, newStatus: string) => {
+        try {
+            await api.enquiries.updateStatus(enquiryId, newStatus.toUpperCase());
+            refreshAllData();
+        } catch (err: any) {
+            alert('Update failed: ' + err.message);
+        }
+    };
+
+    const handleDeleteEnquiry = async (enquiryId: string) => {
+        if (!window.confirm('Delete this enquiry?')) return;
+        try {
+            await api.enquiries.delete(enquiryId);
+            refreshAllData();
+        } catch (err: any) {
+            alert('Delete failed: ' + err.message);
+        }
+    };
+
+    const handleSaveHero = async () => {
+        try {
+            await api.content.update('HERO', heroContent);
+            alert('Hero content synced!');
+            setShowContentForm(null);
+        } catch (err: any) {
+            alert('Sync failed: ' + err.message);
+        }
+    };
+
+    const handleSaveAbout = async () => {
+        try {
+            await api.content.update('ABOUT', aboutContent);
+            alert('About content synced!');
+            setShowContentForm(null);
+        } catch (err: any) {
+            alert('Sync failed: ' + err.message);
+        }
+    };
+
+    const handleSaveContact = async () => {
+        try {
+            await api.content.update('CONTACT', contactContent);
+            alert('Contact matrix synced!');
+            setShowContentForm(null);
+        } catch (err: any) {
+            alert('Sync failed: ' + err.message);
+        }
+    };
+
+    const handleAddService = async (service: Omit<ServiceContent, 'id'>) => {
+        const newServices = [...services, { ...service, id: Date.now().toString() }];
+        try {
+            await api.content.update('SERVICES', { services: newServices });
+            setEditingService(null);
+            setShowContentForm(null);
+            refreshAllData();
+        } catch (err: any) {
+            alert('Add failed: ' + err.message);
+        }
+    };
+
+    const handleUpdateService = async (service: ServiceContent) => {
+        const newServices = services.map(s => s.id === service.id ? service : s);
+        try {
+            await api.content.update('SERVICES', { services: newServices });
+            setEditingService(null);
+            setShowContentForm(null);
+            refreshAllData();
+        } catch (err: any) {
+            alert('Update failed: ' + err.message);
+        }
+    };
+
+    const handleDeleteService = async (serviceId: string) => {
+        if (!window.confirm('Delete this service?')) return;
+        const newServices = services.filter(s => s.id !== serviceId);
+        try {
+            await api.content.update('SERVICES', { services: newServices });
+            refreshAllData();
+        } catch (err: any) {
+            alert('Delete failed: ' + err.message);
+        }
+    };
+
+    const handleToggleServiceActive = async (serviceId: string) => {
+        const newServices = services.map(s => s.id === serviceId ? { ...s, isActive: !s.isActive } : s);
+        try {
+            await api.content.update('SERVICES', { services: newServices });
+            refreshAllData();
+        } catch (err: any) {
+            alert('Toggle failed: ' + err.message);
+        }
+    };
+
+    // Project Handlers
+    const handleAddProject = async (project: any) => {
+        try {
+            await api.projects.create(project);
+            refreshAllData();
+        } catch (err: any) {
+            alert('Project add failed: ' + err.message);
+        }
+    };
+
+    const handleUpdateProject = async (id: string, project: any) => {
+        try {
+            await api.projects.update(id, project);
+            refreshAllData();
+        } catch (err: any) {
+            alert('Project update failed: ' + err.message);
+        }
+    };
+
+    const handleDeleteProject = async (id: string) => {
+        if (!window.confirm('Delete project?')) return;
+        try {
+            await api.projects.delete(id);
+            refreshAllData();
+        } catch (err: any) {
+            alert('Project delete failed: ' + err.message);
+        }
+    };
+
+    const handleToggleProjectActive = async (id: string) => {
+        try {
+            await api.projects.toggle(id);
+            refreshAllData();
+        } catch (err: any) {
+            alert('Toggle failed: ' + err.message);
+        }
+    };
+
+    // Golden Hour Set Handlers
+    const handleAddGHSet = async (set: any) => {
+        try {
+            await api.goldenHour.create(set);
+            refreshAllData();
+        } catch (err: any) {
+            alert('Set add failed: ' + err.message);
+        }
+    };
+
+    const handleUpdateGHSet = async (id: string, set: any) => {
+        try {
+            await api.goldenHour.update(id, set);
+            refreshAllData();
+        } catch (err: any) {
+            alert('Set update failed: ' + err.message);
+        }
+    };
+
+    const handleDeleteGHSet = async (id: string) => {
+        if (!window.confirm('Delete set?')) return;
+        try {
+            await api.goldenHour.delete(id);
+            refreshAllData();
+        } catch (err: any) {
+            alert('Set delete failed: ' + err.message);
+        }
+    };
+
+    const handleToggleGHSetActive = async (id: string) => {
+        try {
+            await api.goldenHour.toggle(id);
+            refreshAllData();
+        } catch (err: any) {
+            alert('Toggle failed: ' + err.message);
+        }
     };
 
     // Stats
@@ -363,9 +506,191 @@ const AdminPage: React.FC = () => {
         { name: 'Dashboard', icon: <LayoutDashboard size={18} /> },
         { name: 'Bookings', icon: <Calendar size={18} /> },
         { name: 'Studios', icon: <Building size={18} /> },
+        { name: 'Projects', icon: <ArrowRightCircle size={18} /> },
+        { name: 'Golden Hour', icon: <Image size={18} /> },
         { name: 'Enquiries', icon: <MessageSquare size={18} /> },
         { name: 'Content', icon: <Edit3 size={18} /> },
     ];
+
+    const renderProjects = () => (
+        <div className="space-y-12 animate-fade-in">
+            <div className="flex justify-between items-center bg-white border-2 border-black p-10">
+                <div>
+                    <h3 className="text-4xl font-['Oswald'] font-bold uppercase tracking-tight">Project Portfolio</h3>
+                    <p className="text-[10px] uppercase tracking-[0.3em] font-black text-neutral-400 mt-4">Narrative Archive / {projects.length} Entries</p>
+                </div>
+                <button
+                    onClick={() => { setEditingProject(null); setShowProjectForm(true); }}
+                    className="px-10 py-5 bg-black text-white text-[10px] font-black uppercase tracking-[0.3em] hover:bg-neutral-800 transition-all flex items-center gap-3 shadow-[8px_8px_0px_0px_rgba(0,0,0,0.1)]"
+                >
+                    <Plus size={16} /> Deploy New Narrative
+                </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {projects.map((project) => (
+                    <div key={project.id} className="bg-white border-2 border-black group hover:shadow-[12px_12px_0px_0px_rgba(0,0,0,0.2)] transition-all overflow-hidden flex flex-col">
+                        <div className="aspect-video bg-neutral-100 border-b-2 border-black overflow-hidden relative">
+                            <img src={project.media_url || project.thumbnail || ''} alt={project.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                            <div className="absolute top-4 right-4 flex gap-2">
+                                <span className="px-3 py-1 bg-white border-2 border-black text-[8px] font-black uppercase tracking-widest">{project.year}</span>
+                                <span className={`px-3 py-1 border-2 border-black text-[8px] font-black uppercase tracking-widest ${project.is_active ? 'bg-black text-white' : 'bg-neutral-200'}`}>
+                                    {project.is_active ? 'PUBLIC' : 'DRAFT'}
+                                </span>
+                            </div>
+                        </div>
+                        <div className="p-8 flex-1 flex flex-col">
+                            <div className="flex justify-between items-start mb-6">
+                                <div>
+                                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-400 mb-2">{project.brand} / {project.type}</p>
+                                    <h4 className="text-2xl font-bold font-display uppercase tracking-tight leading-tight">{project.name}</h4>
+                                </div>
+                            </div>
+                            <div className="flex flex-wrap gap-2 mb-8 mt-auto">
+                                {(project.category || []).map(cat => (
+                                    <span key={cat} className="px-2 py-1 bg-neutral-50 border border-black/10 text-[8px] font-bold uppercase tracking-widest">{cat}</span>
+                                ))}
+                            </div>
+                            <div className="grid grid-cols-2 gap-3 border-t-2 border-black/5 pt-6">
+                                <button onClick={() => { setEditingProject(project); setShowProjectForm(true); }} className="py-3 bg-neutral-50 border-2 border-black/10 text-[9px] font-black uppercase tracking-widest hover:border-black transition-all flex items-center justify-center gap-2">
+                                    <Edit3 size={12} /> Edit
+                                </button>
+                                <button onClick={() => handleDeleteProject(project.id)} className="py-3 border-2 border-transparent text-red-600 text-[9px] font-black uppercase tracking-widest hover:bg-red-50 hover:border-red-600 transition-all">
+                                    Void
+                                </button>
+                                <button onClick={() => handleToggleProjectActive(project.id)} className="col-span-2 py-3 bg-black text-white text-[9px] font-black uppercase tracking-widest hover:bg-neutral-800 transition-all">
+                                    {project.is_active ? 'Revoke Deployment' : 'Launch Live'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {/* Project Form Modal */}
+            {showProjectForm && (
+                <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-6" onClick={() => setShowProjectForm(false)}>
+                    <div className="bg-white w-full max-w-4xl border-2 border-black shadow-[30px_30px_0px_0px_rgba(0,0,0,1)] animate-scale-up max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                        <div className="flex border-b-2 border-black sticky top-0 bg-white z-10">
+                            <div className="flex-1 p-8 md:p-12">
+                                <div className="flex items-center gap-4 mb-4">
+                                    <div className="w-10 h-2 bg-black" />
+                                    <span className="text-[10px] font-black uppercase tracking-[0.4em] text-neutral-400">Narrative Config</span>
+                                </div>
+                                <h2 className="text-4xl font-black font-['Oswald'] uppercase tracking-tight">
+                                    {editingProject ? 'Modify Narrative' : 'Initialize New Entry'}
+                                </h2>
+                            </div>
+                            <button onClick={() => setShowProjectForm(false)} className="w-24 border-l-2 border-black flex items-center justify-center hover:bg-black hover:text-white transition-all">
+                                <X size={24} />
+                            </button>
+                        </div>
+                        <div className="p-8 md:p-12">
+                            <ProjectForm
+                                project={editingProject}
+                                onSubmit={(data) => {
+                                    if (editingProject) handleUpdateProject(editingProject.id, data);
+                                    else handleAddProject(data);
+                                    setShowProjectForm(false);
+                                }}
+                                onCancel={() => setShowProjectForm(false)}
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+
+    const renderGoldenHour = () => (
+        <div className="space-y-12 animate-fade-in">
+            <div className="flex justify-between items-center bg-white border-2 border-black p-10">
+                <div>
+                    <h3 className="text-4xl font-['Oswald'] font-bold uppercase tracking-tight">Golden Hour Sets</h3>
+                    <p className="text-[10px] uppercase tracking-[0.3em] font-black text-neutral-400 mt-4">Modular Environments / {goldenHourSets.length} Matrix Sets</p>
+                </div>
+                <button
+                    onClick={() => { setEditingGHSet(null); setShowGHForm(true); }}
+                    className="px-10 py-5 bg-black text-white text-[10px] font-black uppercase tracking-[0.3em] hover:bg-neutral-800 transition-all flex items-center gap-3 shadow-[8px_8px_0px_0px_rgba(0,0,0,0.1)]"
+                >
+                    <Plus size={16} /> Initialize Matrix Set
+                </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {goldenHourSets.map((set) => (
+                    <div key={set.id} className="bg-white border-2 border-black group hover:shadow-[12px_12px_0px_0px_rgba(0,0,0,0.2)] transition-all overflow-hidden flex flex-col">
+                        <div className="aspect-video bg-neutral-100 border-b-2 border-black overflow-hidden relative">
+                            <img src={set.image_url} alt={set.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                            <div className="absolute top-4 right-4 flex gap-2">
+                                <span className="px-3 py-1 bg-white border-2 border-black text-[8px] font-black uppercase tracking-widest">{set.category}</span>
+                                <span className={`px-3 py-1 border-2 border-black text-[8px] font-black uppercase tracking-widest ${set.is_active ? 'bg-black text-white' : 'bg-neutral-200'}`}>
+                                    {set.is_active ? 'LIVE' : 'MAINTENANCE'}
+                                </span>
+                            </div>
+                        </div>
+                        <div className="p-8 flex-1 flex flex-col">
+                            <div className="flex justify-between items-start mb-6">
+                                <div>
+                                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-400 mb-2">{set.theme}</p>
+                                    <h4 className="text-2xl font-bold font-display uppercase tracking-tight leading-tight">{set.name}</h4>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-xl font-bold font-display">{set.price}</p>
+                                    <p className="text-[8px] font-bold text-neutral-400 uppercase tracking-widest">{set.price_note}</p>
+                                </div>
+                            </div>
+                            <p className="text-[11px] text-neutral-600 line-clamp-2 mb-8 leading-relaxed">{set.description}</p>
+                            <div className="grid grid-cols-2 gap-3 border-t-2 border-black/5 pt-6 mt-auto">
+                                <button onClick={() => { setEditingGHSet(set); setShowGHForm(true); }} className="py-3 bg-neutral-50 border-2 border-black/10 text-[9px] font-black uppercase tracking-widest hover:border-black transition-all flex items-center justify-center gap-2">
+                                    <Edit3 size={12} /> Configure
+                                </button>
+                                <button onClick={() => handleDeleteGHSet(set.id)} className="py-3 border-2 border-transparent text-red-600 text-[9px] font-black uppercase tracking-widest hover:bg-red-50 hover:border-red-600 transition-all">
+                                    Void
+                                </button>
+                                <button onClick={() => handleToggleGHSetActive(set.id)} className="col-span-2 py-3 bg-black text-white text-[9px] font-black uppercase tracking-widest hover:bg-neutral-800 transition-all">
+                                    {set.is_active ? 'Suspend Operations' : 'Resume Operations'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {/* GH Form Modal */}
+            {showGHForm && (
+                <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-6" onClick={() => setShowGHForm(false)}>
+                    <div className="bg-white w-full max-w-5xl border-2 border-black shadow-[30px_30px_0px_0px_rgba(0,0,0,1)] animate-scale-up max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                        <div className="flex border-b-2 border-black sticky top-0 bg-white z-10">
+                            <div className="flex-1 p-8 md:p-12">
+                                <div className="flex items-center gap-4 mb-4">
+                                    <div className="w-10 h-2 bg-black" />
+                                    <span className="text-[10px] font-black uppercase tracking-[0.4em] text-neutral-400">Matrix Set Config</span>
+                                </div>
+                                <h2 className="text-4xl font-black font-['Oswald'] uppercase tracking-tight">
+                                    {editingGHSet ? 'Modify Set Matrix' : 'Initialize New Set'}
+                                </h2>
+                            </div>
+                            <button onClick={() => setShowGHForm(false)} className="w-24 border-l-2 border-black flex items-center justify-center hover:bg-black hover:text-white transition-all">
+                                <X size={24} />
+                            </button>
+                        </div>
+                        <div className="p-8 md:p-12">
+                            <GoldenHourForm
+                                set={editingGHSet}
+                                onSubmit={(data) => {
+                                    if (editingGHSet) handleUpdateGHSet(editingGHSet.id, data);
+                                    else handleAddGHSet(data);
+                                    setShowGHForm(false);
+                                }}
+                                onCancel={() => setShowGHForm(false)}
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
 
     const renderDashboard = () => (
         <div className="space-y-12">
@@ -1070,18 +1395,45 @@ const AdminPage: React.FC = () => {
                         </div>
                     </header>
 
-                    <div className="p-8 md:p-12 lg:p-20 max-w-[1600px] mx-auto">
+                    <div className="p-8 md:p-12 lg:p-20 max-w-[1600px] mx-auto relative min-h-[400px]">
+                        {isLoading && (
+                            <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] z-10 flex items-center justify-center pt-20">
+                                <div className="flex flex-col items-center gap-6">
+                                    <div className="w-12 h-12 border-4 border-black border-t-transparent animate-spin" />
+                                    <p className="text-[10px] font-black uppercase tracking-[0.4em] animate-pulse">Synchronizing Terminal...</p>
+                                </div>
+                            </div>
+                        )}
 
-                    {activeTab === 'Dashboard' && renderDashboard()}
-                    {activeTab === 'Bookings' && renderBookings()}
-                    {activeTab === 'Studios' && renderStudios()}
-                    {activeTab === 'Enquiries' && renderEnquiries()}
-                    {activeTab === 'Content' && renderContent()}
+                        {error && (
+                            <div className="bg-red-50 border-2 border-red-600 p-8 mb-12 flex items-center justify-between">
+                                <div className="flex items-center gap-6 text-red-600">
+                                    <XCircle size={24} />
+                                    <div>
+                                        <p className="text-[10px] font-black uppercase tracking-widest">System Error</p>
+                                        <p className="font-bold">{error}</p>
+                                    </div>
+                                </div>
+                                <button onClick={() => refreshAllData()} className="px-8 py-3 bg-red-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-red-700 transition-all">Retry Link</button>
+                            </div>
+                        )}
+
+                        {!isLoading && !error && (
+                            <>
+                                {activeTab === 'Dashboard' && renderDashboard()}
+                                {activeTab === 'Bookings' && renderBookings()}
+                                {activeTab === 'Studios' && renderStudios()}
+                                {activeTab === 'Projects' && renderProjects()}
+                                {activeTab === 'Golden Hour' && renderGoldenHour()}
+                                {activeTab === 'Enquiries' && renderEnquiries()}
+                                {activeTab === 'Content' && renderContent()}
+                            </>
+                        )}
                     </div>
                 </FadeInSection>
             </main>
 
-            {/* Booking Detail Modal */}
+
             {selectedBooking && (
                 <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-6" onClick={() => setSelectedBooking(null)}>
                     <div className="bg-white w-full max-w-5xl border-2 border-black shadow-[20px_20px_0px_0px_rgba(0,0,0,1)] animate-scale-up" onClick={e => e.stopPropagation()}>
@@ -1216,9 +1568,69 @@ const AdminPage: React.FC = () => {
                     </div>
                 </div>
             )}
+
+            {/* Project Form Modal */}
+            {showProjectForm && (
+                <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-6" onClick={() => setShowProjectForm(false)}>
+                    <div className="bg-white w-full max-w-4xl border-2 border-black shadow-[30px_30px_0px_0px_rgba(0,0,0,1)] animate-scale-up max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                        <div className="flex border-b-2 border-black sticky top-0 bg-white z-10">
+                            <div className="flex-1 p-8 md:p-12">
+                                <div className="flex items-center gap-4 mb-4">
+                                    <div className="w-10 h-2 bg-black" />
+                                    <span className="text-[10px] font-black uppercase tracking-[0.4em] text-neutral-400">Narrative Archive</span>
+                                </div>
+                                <h2 className="text-4xl md:text-5xl font-black font-['Oswald'] uppercase tracking-tight leading-none">
+                                    {editingProject ? 'Modify Narrative' : 'Deploy New Project'}
+                                </h2>
+                            </div>
+                            <button onClick={() => setShowProjectForm(false)} className="w-24 border-l-2 border-black flex items-center justify-center hover:bg-black hover:text-white transition-all">
+                                <X size={24} />
+                            </button>
+                        </div>
+                        <div className="p-8 md:p-12">
+                            <ProjectForm
+                                project={editingProject}
+                                onSubmit={editingProject ? (data) => handleUpdateProject(editingProject.id, data) : handleAddProject}
+                                onCancel={() => setShowProjectForm(false)}
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Golden Hour Form Modal */}
+            {showGHForm && (
+                <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-6" onClick={() => setShowGHForm(false)}>
+                    <div className="bg-white w-full max-w-5xl border-2 border-black shadow-[30px_30px_0px_0px_rgba(0,0,0,1)] animate-scale-up max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                        <div className="flex border-b-2 border-black sticky top-0 bg-white z-10">
+                            <div className="flex-1 p-8 md:p-12">
+                                <div className="flex items-center gap-4 mb-4">
+                                    <div className="w-10 h-2 bg-black" />
+                                    <span className="text-[10px] font-black uppercase tracking-[0.4em] text-neutral-400">Modular Architecture</span>
+                                </div>
+                                <h2 className="text-4xl md:text-5xl font-black font-['Oswald'] uppercase tracking-tight leading-none">
+                                    {editingGHSet ? 'Reconfigure Set' : 'Register Modular Set'}
+                                </h2>
+                            </div>
+                            <button onClick={() => setShowGHForm(false)} className="w-24 border-l-2 border-black flex items-center justify-center hover:bg-black hover:text-white transition-all">
+                                <X size={24} />
+                            </button>
+                        </div>
+                        <div className="p-8 md:p-12">
+                            <GoldenHourForm
+                                set={editingGHSet}
+                                onSubmit={editingGHSet ? (data) => handleUpdateGHSet(editingGHSet.id, data) : handleAddGHSet}
+                                onCancel={() => setShowGHForm(false)}
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
+
+
 
 // Studio Form Component
 const StudioForm: React.FC<{
@@ -1502,6 +1914,221 @@ const ServiceForm: React.FC<{
                 >
                     {service ? 'Sync Vector Data' : 'Deploy Module'}
                 </button>
+            </div>
+        </form>
+    );
+};
+
+// Project Form Component
+const ProjectForm: React.FC<{
+    project: Project | null;
+    onSubmit: (data: any) => void;
+    onCancel: () => void;
+}> = ({ project, onSubmit, onCancel }) => {
+    const [formData, setFormData] = useState({
+        name: project?.name || '',
+        brand: project?.brand || '',
+        type: project?.type || 'Cinematography',
+        year: project?.year || new Date().getFullYear().toString(),
+        media_url: project?.media_url || '',
+        thumbnail: project?.thumbnail || '',
+        category: project?.category || [],
+        is_active: project?.is_active ?? true,
+        order: project?.order || 0
+    });
+    const [newCat, setNewCat] = useState('');
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        onSubmit(formData);
+    };
+
+    return (
+        <form onSubmit={handleSubmit} className="space-y-10">
+            <div className="grid md:grid-cols-2 gap-10">
+                <div className="space-y-6">
+                    <div>
+                        <label className="block text-[9px] font-black uppercase tracking-[0.3em] text-neutral-400 mb-3">Project Title</label>
+                        <input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full bg-neutral-50 border-2 border-black/10 px-6 py-4 text-sm font-bold uppercase tracking-widest focus:border-black focus:outline-none" required />
+                    </div>
+                    <div>
+                        <label className="block text-[9px] font-black uppercase tracking-[0.3em] text-neutral-400 mb-3">Brand / Client</label>
+                        <input type="text" value={formData.brand} onChange={e => setFormData({...formData, brand: e.target.value})} className="w-full bg-neutral-50 border-2 border-black/10 px-6 py-4 text-sm font-bold uppercase tracking-widest focus:border-black focus:outline-none" required />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-[9px] font-black uppercase tracking-[0.3em] text-neutral-400 mb-3">Year</label>
+                            <input type="text" value={formData.year} onChange={e => setFormData({...formData, year: e.target.value})} className="w-full bg-neutral-50 border-2 border-black/10 px-6 py-4 text-sm font-bold focus:border-black focus:outline-none" />
+                        </div>
+                        <div>
+                            <label className="block text-[9px] font-black uppercase tracking-[0.3em] text-neutral-400 mb-3">Narrative Type</label>
+                            <select value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})} className="w-full bg-neutral-50 border-2 border-black/10 px-6 py-4 text-sm font-bold uppercase tracking-tight focus:border-black focus:outline-none">
+                                <option value="Cinematography">Cinematography</option>
+                                <option value="Commercial">Commercial</option>
+                                <option value="Visual Effects">Visual Effects</option>
+                                <option value="Music Video">Music Video</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div className="space-y-6">
+                    <div>
+                        <label className="block text-[9px] font-black uppercase tracking-[0.3em] text-neutral-400 mb-3">Primary Asset URL (Video/Image)</label>
+                        <input type="url" value={formData.media_url} onChange={e => setFormData({...formData, media_url: e.target.value})} className="w-full bg-neutral-50 border-2 border-black/10 px-6 py-4 text-xs font-mono focus:border-black focus:outline-none" required />
+                    </div>
+                    <div>
+                        <label className="block text-[9px] font-black uppercase tracking-[0.3em] text-neutral-400 mb-3">Tags / Categories</label>
+                        <div className="flex gap-2 mb-3">
+                            <input 
+                                type="text" 
+                                value={newCat} 
+                                onChange={e => setNewCat(e.target.value)} 
+                                onKeyPress={e => {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        if (formData.category.length < 5 && newCat.trim()) {
+                                            setFormData({...formData, category: [...formData.category, newCat.trim()]});
+                                            setNewCat('');
+                                        }
+                                    }
+                                }} 
+                                className="flex-1 bg-neutral-50 border-2 border-black/10 px-4 py-2 text-xs focus:border-black focus:outline-none" 
+                                placeholder="Add tag..." 
+                            />
+                            <button 
+                                type="button" 
+                                onClick={() => {
+                                    if (formData.category.length < 5 && newCat.trim()) {
+                                        setFormData({...formData, category: [...formData.category, newCat.trim()]});
+                                        setNewCat('');
+                                    }
+                                }} 
+                                className="px-4 bg-black text-white text-[10px] font-black"
+                            >
+                                +
+                            </button>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            {formData.category.map((c, i) => (
+                                <span key={i} className="px-3 py-1 bg-white border border-black text-[8px] font-bold uppercase flex items-center gap-2">
+                                    {c} <button type="button" onClick={() => setFormData({...formData, category: formData.category.filter((_, idx) => idx !== i)})} className="text-red-600">×</button>
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-4 pt-4">
+                        <button type="button" onClick={() => setFormData({...formData, is_active: !formData.is_active})} className={`w-12 h-6 border-2 border-black relative transition-all ${formData.is_active ? 'bg-black' : 'bg-neutral-100'}`}>
+                            <div className={`absolute top-0.5 bottom-0.5 w-4 border-2 border-black bg-white transition-all ${formData.is_active ? 'right-0.5' : 'left-0.5'}`} />
+                        </button>
+                        <span className="text-[9px] font-black uppercase tracking-widest">{formData.is_active ? 'Deployed Live' : 'Archived / Hidden'}</span>
+                    </div>
+                </div>
+            </div>
+            <div className="flex gap-4 pt-10 border-t-2 border-black/10">
+                <button type="button" onClick={onCancel} className="flex-1 py-4 border-2 border-black text-[10px] font-black uppercase tracking-widest hover:bg-neutral-50">Abort</button>
+                <button type="submit" className="flex-1 py-4 bg-black text-white text-[10px] font-black uppercase tracking-widest hover:bg-neutral-800">{project ? 'Update Narrative' : 'Commit Narrative'}</button>
+            </div>
+        </form>
+    );
+};
+
+// Golden Hour Form Component
+const GoldenHourForm: React.FC<{
+    set: GoldenHourSet | null;
+    onSubmit: (data: any) => void;
+    onCancel: () => void;
+}> = ({ set, onSubmit, onCancel }) => {
+    const [formData, setFormData] = useState({
+        name: set?.name || '',
+        category: set?.category || 'Indoor',
+        theme: set?.theme || '',
+        description: set?.description || '',
+        price: (set?.price || '₹0').replace('₹', ''),
+        price_note: set?.price_note || 'per hour',
+        image_url: set?.image_url || '',
+        bts_video: set?.bts_video || '',
+        dimensions: set?.dimensions || '',
+        props: set?.props || [],
+        coords_x: set?.coords_x || 0,
+        coords_y: set?.coords_y || 0,
+        coords_w: set?.coords_w || 100,
+        coords_h: set?.coords_h || 100,
+        is_active: set?.is_active ?? true,
+        order: set?.order || 0
+    });
+    const [newProp, setNewProp] = useState('');
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        onSubmit(formData);
+    };
+
+    return (
+        <form onSubmit={handleSubmit} className="space-y-12">
+            <div className="grid md:grid-cols-2 gap-12">
+                <div className="space-y-8">
+                    <div>
+                        <label className="block text-[9px] font-black uppercase tracking-[0.3em] text-neutral-400 mb-3">Set Designation</label>
+                        <input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full bg-neutral-50 border-2 border-black/10 px-8 py-5 text-sm font-bold uppercase tracking-widest focus:border-black focus:outline-none" required />
+                    </div>
+                    <div className="grid grid-cols-2 gap-6">
+                        <div>
+                            <label className="block text-[9px] font-black uppercase tracking-[0.3em] text-neutral-400 mb-3">Category</label>
+                            <select value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full bg-neutral-50 border-2 border-black/10 px-6 py-4 text-[11px] font-bold uppercase focus:border-black">
+                                <option value="Indoor">Indoor</option>
+                                <option value="Outdoor">Outdoor</option>
+                                <option value="Semi-Outdoor">Semi-Outdoor</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-[9px] font-black uppercase tracking-[0.3em] text-neutral-400 mb-3">Aesthetic Theme</label>
+                            <input type="text" value={formData.theme} onChange={e => setFormData({...formData, theme: e.target.value})} className="w-full bg-neutral-50 border-2 border-black/10 px-6 py-4 text-[11px] font-bold uppercase focus:border-black" placeholder="e.g. Cyberpunk" />
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block text-[9px] font-black uppercase tracking-[0.3em] text-neutral-400 mb-3">Structural Narrative</label>
+                        <textarea value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full bg-neutral-50 border-2 border-black/10 px-8 py-5 text-xs font-display focus:border-black h-32" />
+                    </div>
+                </div>
+                <div className="space-y-8">
+                    <div className="grid grid-cols-2 gap-6">
+                        <div>
+                            <label className="block text-[9px] font-black uppercase tracking-[0.3em] text-neutral-400 mb-3">Rate (Value Only)</label>
+                            <div className="relative">
+                                <span className="absolute left-6 top-1/2 -translate-y-1/2 font-bold">₹</span>
+                                <input type="number" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} className="w-full bg-neutral-50 border-2 border-black/10 pl-12 pr-6 py-4 font-bold focus:border-black" />
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-[9px] font-black uppercase tracking-[0.3em] text-neutral-400 mb-3">Rate Logic</label>
+                            <input type="text" value={formData.price_note} onChange={e => setFormData({...formData, price_note: e.target.value})} className="w-full bg-neutral-50 border-2 border-black/10 px-6 py-4 text-[11px] font-bold uppercase focus:border-black" />
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block text-[9px] font-black uppercase tracking-[0.3em] text-neutral-400 mb-3">Asset Core URL</label>
+                        <input type="url" value={formData.image_url} onChange={e => setFormData({...formData, image_url: e.target.value})} className="w-full bg-neutral-50 border-2 border-black/10 px-8 py-4 text-[10px] font-mono focus:border-black" required />
+                    </div>
+                    <div>
+                        <label className="block text-[9px] font-black uppercase tracking-[0.3em] text-neutral-400 mb-3">Interactive Logic (Coordinates X/Y/W/H)</label>
+                        <div className="grid grid-cols-4 gap-2">
+                            {['x', 'y', 'w', 'h'].map(coord => (
+                                <input 
+                                    key={coord} 
+                                    type="number" 
+                                    value={(formData as any)[`coords_${coord}`]} 
+                                    onChange={e => setFormData({...formData, [`coords_${coord}`]: parseInt(e.target.value) || 0})} 
+                                    className="bg-neutral-100 border-2 border-black/5 text-center py-2 text-[10px] font-bold focus:border-black"
+                                    placeholder={coord.toUpperCase()}
+                                />
+                            ))}
+                        </div>
+                        <p className="text-[8px] text-neutral-400 mt-2 font-bold uppercase tracking-widest">Defines the interactive zone in the global sets grid.</p>
+                    </div>
+                </div>
+            </div>
+            <div className="flex gap-4 pt-12 border-t-2 border-black/10">
+                <button type="button" onClick={onCancel} className="flex-1 py-5 border-2 border-black text-[11px] font-black uppercase tracking-[0.3em] hover:bg-neutral-50">Abort</button>
+                <button type="submit" className="flex-1 py-5 bg-black text-white text-[11px] font-black uppercase tracking-[0.3em] hover:bg-neutral-800">Synchronize Matrix</button>
             </div>
         </form>
     );

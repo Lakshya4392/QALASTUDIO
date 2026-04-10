@@ -152,8 +152,8 @@ const AdminStudiosPage: React.FC = () => {
     return [];
   };
 
-  const load = async () => {
-    setLoading(true);
+  const load = async (showSpinner = true) => {
+    if (showSpinner) setLoading(true);
     try {
       const res = await api.studios.getAll();
       setStudios((Array.isArray(res) ? res : []).map((s: any) => ({
@@ -164,7 +164,7 @@ const AdminStudiosPage: React.FC = () => {
         isActive: s.is_active, order: s.order,
       })));
     } catch (e) { console.error(e); }
-    finally { setLoading(false); }
+    finally { if (showSpinner) setLoading(false); }
   };
 
   const fetchStudioImages = React.useCallback(async () => {
@@ -192,25 +192,32 @@ const AdminStudiosPage: React.FC = () => {
         is_active: data.isActive, features: data.features,
         order: editing ? editing.order : studios.length + 1,
       };
-      if (editing) await api.studios.update(editing.id, payload);
-      else await api.studios.create(payload);
-      await load();
+      
+      if (editing) {
+        setStudios(prev => prev.map(s => s.id === editing.id ? { ...s, ...data, isActive: data.isActive, price: data.price ? parseFloat(data.price.toString().replace(/[^0-9.]/g, '')).toString() : '' } : s));
+        await api.studios.update(editing.id, payload);
+      } else {
+        await api.studios.create(payload);
+        await load(false);
+      }
+      
       setShowForm(false);
       setEditing(null);
-    } catch (e: any) { alert(`Failed to save studio: ${e?.message || 'Unknown error'}`); }
+    } catch (e: any) { alert(`Failed to save studio: ${e?.message || 'Unknown error'}`); await load(false); }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this studio permanently?')) return;
-    try { await api.studios.delete(id); await load(); }
-    catch { alert('Failed to delete studio'); }
+    const oldStudios = studios;
+    setStudios(prev => prev.filter(s => s.id !== id));
+    try { await api.studios.delete(id); }
+    catch { setStudios(oldStudios); alert('Failed to delete studio'); }
   };
 
   const handleToggle = async (id: string, current: boolean) => {
-    try { 
-      await api.studios.update(id, { is_active: !current }); 
-      await load(); 
-    } catch { alert('Failed to toggle studio'); }
+    setStudios(prev => prev.map(s => s.id === id ? { ...s, isActive: !current } : s));
+    try { await api.studios.update(id, { is_active: !current }); }
+    catch { setStudios(prev => prev.map(s => s.id === id ? { ...s, isActive: current } : s)); alert('Failed to toggle studio'); }
   };
 
   return (
@@ -231,7 +238,7 @@ const AdminStudiosPage: React.FC = () => {
           </p>
         </div>
         <div className="flex gap-4">
-          <button onClick={load} className="group p-4 border-2 border-black/10 text-black/40 hover:border-black hover:text-black transition-all rounded-2xl">
+          <button onClick={() => load()} className="group p-4 border-2 border-black/10 text-black/40 hover:border-black hover:text-black transition-all rounded-2xl">
             <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
           </button>
           <button onClick={() => { setEditing(null); setShowForm(true); }}

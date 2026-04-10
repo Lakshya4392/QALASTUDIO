@@ -67,19 +67,27 @@ const AdminBookingsPage: React.FC = () => {
   useEffect(() => { fetch(); }, []);
 
   const updateStatus = async (id: string, status: string) => {
+    const oldBookings = bookings;
+    setBookings(prev => prev.map(b => b.id === id ? { ...b, status } : b));
     try {
       const backendStatus = status === 'pending' ? 'pending_payment' : status;
       await api.bookings.updateStatus(id, backendStatus);
-      setBookings(prev => prev.map(b => b.id === id ? { ...b, status } : b));
-    } catch (e) { alert('Failed to update status'); }
+    } catch (e) { 
+      setBookings(oldBookings);
+      alert('Failed to update status'); 
+    }
   };
 
   const deleteBooking = async (id: string) => {
     if (!confirm('Delete this booking permanently?')) return;
+    const oldBookings = bookings;
+    setBookings(prev => prev.filter(b => b.id !== id));
     try {
       await api.bookings.delete(id);
-      setBookings(prev => prev.filter(b => b.id !== id));
-    } catch (e) { alert('Failed to delete booking'); }
+    } catch (e) { 
+      setBookings(oldBookings);
+      alert('Failed to delete booking'); 
+    }
   };
 
   const filters = ['all', 'confirmed', 'pending_payment', 'cancelled', 'completed', 'hold'];

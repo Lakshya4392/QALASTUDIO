@@ -159,17 +159,15 @@ const AdminGoldenHourPage: React.FC = () => {
   const [editing, setEditing] = useState<GoldenHourSet | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [uploadedImages, setUploadedImages] = useState<any[]>([]);
-  const { content, updateSection, refresh } = useContent();
-  const [meta, setMeta] = useState(content.goldenHour);
-  const [metaSaving, setMetaSaving] = useState(false);
+  const { refresh } = useContent();
 
-  const load = async () => {
-    setLoading(true);
+  const load = async (showSpinner = true) => {
+    if (showSpinner) setLoading(true);
     try {
       const res = await api.goldenHour.getAll();
       setSets(Array.isArray(res) ? res : []);
     } catch (e) { console.error(e); }
-    finally { setLoading(false); }
+    finally { if (showSpinner) setLoading(false); }
   };
 
   const fetchImages = React.useCallback(async () => {
@@ -185,45 +183,39 @@ const AdminGoldenHourPage: React.FC = () => {
       }
     } catch (e) { console.error(e); }
   }, []);
-
   useEffect(() => { load(); fetchImages(); }, [fetchImages]);
-  useEffect(() => { setMeta(content.goldenHour); }, [content.goldenHour]);
 
   const handleSetSave = async (data: any) => {
     try {
-      if (editing) await api.goldenHour.update(editing.id, data);
-      else await api.goldenHour.create(data);
-      await load();
-      await refresh(); // sync public page
+      if (editing) {
+        setSets(prev => prev.map(s => s.id === editing.id ? { ...s, ...data } : s));
+        await api.goldenHour.update(editing.id, data);
+      } else {
+        await api.goldenHour.create(data);
+        await load(false);
+      }
+      refresh(); // non-blocking cache sync
       setShowForm(false);
       setEditing(null);
-    } catch (e: any) { alert(`Failed to save set: ${e?.message || 'Unknown error'}`); }
+    } catch (e: any) { alert(`Failed to save set: ${e?.message || 'Unknown error'}`); await load(false); }
   };
 
   const handleSetDelete = async (id: string) => {
     if (!confirm('Permanently delete this set from DB?')) return;
-    try { await api.goldenHour.delete(id); await load(); await refresh(); }
-    catch (e: any) { alert(`Failed to delete set: ${e?.message || 'Unknown error'}`); }
+    const oldSets = sets;
+    setSets(prev => prev.filter(s => s.id !== id));
+    try { await api.goldenHour.delete(id); refresh(); }
+    catch (e: any) { setSets(oldSets); alert(`Failed to delete set: ${e?.message || 'Unknown error'}`); }
   };
 
   const handleSetToggle = async (id: string) => {
-    try { await api.goldenHour.toggle(id); await load(); await refresh(); }
-    catch (e: any) { alert(`Failed to toggle set: ${e?.message || 'Unknown error'}`); }
+    const targetSet = sets.find(s => s.id === id);
+    if (!targetSet) return;
+    setSets(prev => prev.map(s => s.id === id ? { ...s, is_active: !s.is_active } : s));
+    try { await api.goldenHour.toggle(id); refresh(); }
+    catch (e: any) { setSets(prev => prev.map(s => s.id === id ? { ...s, is_active: targetSet.is_active } : s)); alert(`Failed to toggle set: ${e?.message || 'Unknown error'}`); }
   };
 
-  const [metaSaved, setMetaSaved] = useState(false);
-
-  const handleMetaSave = async () => {
-    setMetaSaving(true);
-    try {
-      await api.content.update('GOLDEN_HOUR', meta);
-      updateSection('goldenHour', { ...meta });
-      await refresh();
-      setMetaSaved(true);
-      setTimeout(() => setMetaSaved(false), 3000);
-    } catch (e: any) { alert(`Failed to update: ${e?.message || 'Unknown error'}`); }
-    finally { setMetaSaving(false); }
-  };
 
   return (
     <div className="max-w-7xl mx-auto space-y-12 animate-fade-in pb-20">
@@ -244,7 +236,7 @@ const AdminGoldenHourPage: React.FC = () => {
           </p>
         </div>
         <div className="flex gap-4">
-          <button onClick={load} className="group p-4 border-2 border-black/10 text-black/40 hover:border-black hover:text-black transition-all rounded-2xl">
+          <button onClick={() => load()} className="group p-4 border-2 border-black/10 text-black/40 hover:border-black hover:text-black transition-all rounded-2xl">
             <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
           </button>
           <button onClick={() => { setEditing(null); setShowForm(true); }}
@@ -254,71 +246,6 @@ const AdminGoldenHourPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Page Editorial Accordion */}
-      <div className="bg-white border-2 border-black/5 rounded-[2.5rem] overflow-hidden">
-        <div className="p-8 flex items-center justify-between border-b-2 border-black/5">
-          <div className="flex items-center gap-4">
-             <div className="p-4 bg-black/[0.03] rounded-2xl"><Layout className="w-6 h-6" /></div>
-             <div>
-               <h3 className="font-black uppercase tracking-widest text-sm text-black">Page Editorial & Labels</h3>
-               <p className="text-[10px] font-bold text-black/30 uppercase tracking-widest">Configure Global Page Attributes</p>
-             </div>
-          </div>
-          <button onClick={handleMetaSave} disabled={metaSaving} className="px-8 py-3 bg-black text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-xl hover:shadow-xl transition-all disabled:opacity-50">
-             {metaSaving ? 'SAVING...' : metaSaved ? '✓ SAVED' : 'PUBLISH PAGE UPDATES'}
-          </button>
-        </div>
-        <div className="p-10 grid md:grid-cols-2 lg:grid-cols-3 gap-10 bg-black/[0.01]">
-            <div className="space-y-4">
-              <Label>Hero Section Tag</Label>
-              <Inp value={meta.sectionTag} onChange={e => setMeta({ ...meta, sectionTag: e.target.value })} />
-            </div>
-            <div className="space-y-4">
-              <Label>Page Title</Label>
-              <Inp value={meta.sectionTitle} onChange={e => setMeta({ ...meta, sectionTitle: e.target.value })} />
-            </div>
-            <div className="space-y-4">
-              <Label>Main Description</Label>
-              <Txta rows={3} value={meta.sectionDescription} onChange={e => setMeta({ ...meta, sectionDescription: e.target.value })} />
-            </div>
-            <div className="space-y-4">
-              <Label>Map Section Title</Label>
-              <Inp value={meta.mapTitle} onChange={e => setMeta({ ...meta, mapTitle: e.target.value })} />
-            </div>
-            <div className="space-y-4">
-              <Label>Availability Status Label</Label>
-              <Inp value={meta.availabilityText} onChange={e => setMeta({ ...meta, availabilityText: e.target.value })} />
-            </div>
-            <div className="space-y-4">
-              <Label>Primary Booking Label</Label>
-              <Inp value={meta.primaryCtaLabel} onChange={e => setMeta({ ...meta, primaryCtaLabel: e.target.value })} />
-            </div>
-            <div className="space-y-4">
-              <Label>Secondary Action Label</Label>
-              <Inp value={meta.secondaryCtaLabel} onChange={e => setMeta({ ...meta, secondaryCtaLabel: e.target.value })} />
-            </div>
-            <div className="space-y-4">
-              <Label>Map Description</Label>
-              <Txta rows={3} value={meta.mapDescription} onChange={e => setMeta({ ...meta, mapDescription: e.target.value })} />
-            </div>
-            <div className="space-y-4">
-              <Label>BTS Section Label</Label>
-              <Inp value={meta.btsLabel} onChange={e => setMeta({ ...meta, btsLabel: e.target.value })} />
-            </div>
-            <div className="space-y-4">
-              <Label>Dimensions Label</Label>
-              <Inp value={meta.dimensionsLabel} onChange={e => setMeta({ ...meta, dimensionsLabel: e.target.value })} />
-            </div>
-            <div className="space-y-4">
-              <Label>Props Label</Label>
-              <Inp value={meta.propsLabel} onChange={e => setMeta({ ...meta, propsLabel: e.target.value })} />
-            </div>
-            <div className="space-y-4">
-              <Label>Availability Status Title</Label>
-              <Inp value={meta.availabilityLabel} onChange={e => setMeta({ ...meta, availabilityLabel: e.target.value })} />
-            </div>
-        </div>
-      </div>
 
       {/* Sets List */}
       <div className="space-y-6">

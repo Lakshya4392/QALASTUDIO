@@ -155,8 +155,8 @@ const AdminProjectsPage: React.FC = () => {
     return [];
   };
 
-  const load = async () => {
-    setLoading(true);
+  const load = async (showSpinner = true) => {
+    if (showSpinner) setLoading(true);
     try {
       const res = await api.projects.getAll();
       setProjects((Array.isArray(res) ? res : []).map((p: any) => ({
@@ -172,7 +172,7 @@ const AdminProjectsPage: React.FC = () => {
         order: p.order,
       })));
     } catch (e) { console.error(e); }
-    finally { setLoading(false); }
+    finally { if (showSpinner) setLoading(false); }
   };
 
   const fetchImages = React.useCallback(async () => {
@@ -204,23 +204,32 @@ const AdminProjectsPage: React.FC = () => {
         category: data.category,
         order: editing ? editing.order : projects.length + 1,
       };
-      if (editing) await api.projects.update(editing.id, payload);
-      else await api.projects.create(payload);
-      await load();
+      
+      if (editing) {
+        setProjects(prev => prev.map(p => p.id === editing.id ? { ...p, ...payload, isActive: payload.is_active } : p));
+        await api.projects.update(editing.id, payload);
+      } else {
+        await api.projects.create(payload);
+        await load(false);
+      }
+      
       setShowForm(false);
       setEditing(null);
-    } catch (e: any) { alert(`Failed to save project: ${e?.message || 'Unknown error'}`); }
+    } catch (e: any) { alert(`Failed to save project: ${e?.message || 'Unknown error'}`); await load(false); }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this project permanently?')) return;
-    try { await api.projects.delete(id); await load(); }
-    catch { alert('Failed to delete project'); }
+    const oldProjects = projects;
+    setProjects(prev => prev.filter(p => p.id !== id));
+    try { await api.projects.delete(id); }
+    catch { setProjects(oldProjects); alert('Failed to delete project'); }
   };
 
   const handleToggle = async (id: string, current: boolean) => {
-    try { await api.projects.update(id, { is_active: !current }); await load(); }
-    catch { alert('Failed to toggle project'); }
+    setProjects(prev => prev.map(p => p.id === id ? { ...p, isActive: !current } : p));
+    try { await api.projects.update(id, { is_active: !current }); }
+    catch { setProjects(prev => prev.map(p => p.id === id ? { ...p, isActive: current } : p)); alert('Failed to toggle project'); }
   };
 
   return (
@@ -241,7 +250,7 @@ const AdminProjectsPage: React.FC = () => {
           </p>
         </div>
         <div className="flex gap-4">
-          <button onClick={load} className="group p-4 border-2 border-black/10 text-black/40 hover:border-black hover:text-black transition-all rounded-2xl">
+          <button onClick={() => load()} className="group p-4 border-2 border-black/10 text-black/40 hover:border-black hover:text-black transition-all rounded-2xl">
             <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
           </button>
           <button onClick={() => { setEditing(null); setShowForm(true); }}
