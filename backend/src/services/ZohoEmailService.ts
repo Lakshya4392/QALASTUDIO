@@ -54,6 +54,9 @@ export class ZohoEmailService {
         user: process.env.ZOHO_EMAIL,
         pass: process.env.ZOHO_APP_PASSWORD
       },
+      connectionTimeout: 20000, // Wait 20 seconds for connection
+      greetingTimeout: 20000,   // Wait 20 seconds for greeting
+      socketTimeout: 30000,     // Wait 30 seconds for socket inactivity
       // Additional security options
       tls: {
         rejectUnauthorized: true
