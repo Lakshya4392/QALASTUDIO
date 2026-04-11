@@ -283,48 +283,87 @@ app.get('/api/availability/slots', async (req: Request, res: Response) => {
     const dayEnd = new Date(dayStart);
     dayEnd.setHours(23, 59, 59, 999);
 
-    // Get free ranges for this day
+    // Get free ranges for this day (already accounts for existing bookings, locks, and operations)
     const freeRanges = await availabilityService.getAvailability(
       String(studio_id), dayStart, dayEnd
     );
 
-    // Slice each free range into discrete slots of the requested duration
-    const slots: { start: string; end: string; price: number; currency: string }[] = [];
+    // 1. Determine Operating Hours for this day to generate the full visual grid
+    const dayOfWeek = dayStart.getDay();
+    const studio = await prisma.studio.findFirst({
+        where: { OR: [{ id: String(studio_id) }, { slug: String(studio_id) }] },
+        include: { availability_rules: true }
+    });
 
-    // Collect all slot time ranges first, then batch price calculations
-    const slotRanges: { start: Date; end: Date }[] = [];
+    let operatingStart = new Date(dayStart);
+    operatingStart.setHours(9, 0, 0, 0); // Fallback 9 AM
+    let operatingEnd = new Date(dayStart);
+    operatingEnd.setHours(22, 0, 0, 0); // Fallback 10 PM
 
-    for (const range of freeRanges) {
-      const rangeStart = new Date(range.start);
-      const rangeEnd = new Date(range.end);
-      const rangeDurationHours = (rangeEnd.getTime() - rangeStart.getTime()) / (1000 * 60 * 60);
-
-      if (rangeDurationHours < durationHours) continue;
-
-      let slotStart = new Date(rangeStart);
-      while (true) {
-        const slotEnd = new Date(slotStart.getTime() + durationHours * 60 * 60 * 1000);
-        if (slotEnd > rangeEnd) break;
-        slotRanges.push({ start: new Date(slotStart), end: new Date(slotEnd) });
-        slotStart = new Date(slotStart.getTime() + 60 * 60 * 1000);
-      }
+    if (studio) {
+        const rule = studio.availability_rules.find(r => r.day_of_week === dayOfWeek && r.is_active);
+        if (rule) {
+            const parseTime = (timeStr: string) => {
+               const [h, m] = timeStr.split(':').map(Number);
+               const d = new Date(dayStart);
+               d.setHours(h, m, 0, 0);
+               return d;
+            };
+            operatingStart = parseTime(rule.start_time);
+            operatingEnd = parseTime(rule.end_time);
+            if (rule.end_time === '00:00' || rule.end_time === '24:00' || rule.end_time === '00:00:00') {
+                 operatingEnd = new Date(dayStart);
+                 operatingEnd.setHours(23, 59, 59, 999);
+            }
+        }
     }
 
-    // Batch all price calculations in parallel
+    // 2. Generate all slots starting from the operating boundaries, moving in 1 hour increments
+    const slotRanges: { start: Date; end: Date; is_available: boolean }[] = [];
+    let currentSlotStart = new Date(operatingStart);
+
+    while (currentSlotStart < operatingEnd) {
+        const currentSlotEnd = new Date(currentSlotStart.getTime() + durationHours * 60 * 60 * 1000);
+        
+        // If this potential slot spills over the operating hours, stop generating.
+        if (currentSlotEnd > operatingEnd) break;
+
+        let isAvailable = false;
+        // Check if [currentSlotStart, currentSlotEnd] perfectly fits inside any freeRange
+        for (const fr of freeRanges) {
+            const frStart = new Date(fr.start);
+            const frEnd = new Date(fr.end);
+            if (currentSlotStart >= frStart && currentSlotEnd <= frEnd) {
+                isAvailable = true;
+                break; // Found a large enough gap!
+            }
+        }
+
+        slotRanges.push({ start: new Date(currentSlotStart), end: new Date(currentSlotEnd), is_available: isAvailable });
+        
+        // Advance cursor by 1 hour (so they can book 4-hours starting at 9, 10, or 11)
+        currentSlotStart = new Date(currentSlotStart.getTime() + 60 * 60 * 1000);
+    }
+
+    // 3. Batch price calculations ONLY for available slots (saves heavy processing)
     const priceResults = await Promise.all(
-      slotRanges.map(({ start, end }) =>
-        pricingService.calculatePrice(String(studio_id), start, end).catch(() => null)
+      slotRanges.map(({ start, end, is_available }) =>
+        is_available 
+          ? pricingService.calculatePrice(String(studio_id), start, end).catch(() => null)
+          : Promise.resolve(null)
       )
     );
 
+    const slots = [];
     for (let i = 0; i < slotRanges.length; i++) {
-      const { start, end } = slotRanges[i];
+      const { start, end, is_available } = slotRanges[i];
       const priceData = priceResults[i];
       slots.push({
         start: start.toISOString(),
         end: end.toISOString(),
         price: priceData?.total ?? 0,
         currency: priceData?.currency ?? 'INR',
+        is_available // <-- Now exposing the lock status mapped directly to the slot
       });
     }
 

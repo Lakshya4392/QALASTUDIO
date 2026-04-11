@@ -10,7 +10,6 @@ interface Member {
   image: string;
   ghostName: string;
   footNote: string;
-  annotations: string[];
 }
 
 interface AboutContent {
@@ -34,8 +33,8 @@ const fallback: AboutContent = {
       quote:
         "Founder. Visionary. Petrolhead. Mudit doesn't just build studios; he builds ecosystems for creativity. His passion is the fuel that keeps Qala moving forward at 100mph.",
       image: '/assets/mudit.png',
+      ghostName: 'MUDIT',
       footNote: 'Grew up in garage bands & garage startups',
-      annotations: ["Can't live without!\nHis Car", 'FPV goggles on,\nworld off', 'Builder by day,\nDJ by night'],
     },
     {
       name: 'Rishab',
@@ -45,7 +44,6 @@ const fallback: AboutContent = {
       image: '/assets/rishab.png',
       ghostName: 'RISHAB',
       footNote: 'Uses Ctrl+Z more than anything!! • Style: Cinematic',
-      annotations: ['Addicted to\ncomposition', 'Builder mindset', 'Fav time? golden hour'],
     },
     {
       name: 'Parth',
@@ -55,7 +53,6 @@ const fallback: AboutContent = {
       image: '/assets/parth.png',
       ghostName: 'PARTH',
       footNote: 'Shoots in 24fps but thinks 100 ideas per second',
-      annotations: ['Go to lens:\n16-35mm', 'Dream location:\nLadakh', 'Sharp story telling'],
     },
   ],
   manifestoHeading: "QALA IS NOT JUST A SPACE; IT'S A",
@@ -87,7 +84,6 @@ const AboutPage: React.FC = () => {
             image: m.image || fallback.members[idx]?.image || '/assets/mudit.png',
             ghostName: m.ghostName || fallback.members[idx]?.ghostName || '',
             footNote: m.footNote || fallback.members[idx]?.footNote || '',
-            annotations: Array.isArray(m.annotations) ? m.annotations : (fallback.members[idx]?.annotations || []),
           })),
           manifestoHeading: data.manifestoHeading || fallback.manifestoHeading,
           manifestoHighlight: data.manifestoHighlight || fallback.manifestoHighlight,

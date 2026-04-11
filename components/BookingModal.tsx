@@ -108,8 +108,8 @@ const BookingModal: React.FC<BookingModalProps> = ({ studioId, studioName, onClo
     const [duration, setDuration] = useState('2');
     const [holdData, setHoldData] = useState<BookingHoldResponse | null>(null);
     const [userDetails, setUserDetails] = useState<UserDetails | null>(null);
-    const [suggestedSlots, setSuggestedSlots] = useState<AvailabilitySlot[]>([]);
-    const [availableSlots, setAvailableSlots] = useState<{ start: string; end: string; price: number; currency: string }[]>([]);
+    const [suggestedSlots, setSuggestedSlots] = useState<any[]>([]);
+    const [availableSlots, setAvailableSlots] = useState<{ start: string; end: string; price: number; currency: string; is_available: boolean }[]>([]);
     const [slotsLoading, setSlotsLoading] = useState(false);
     const [selectedSlot, setSelectedSlot] = useState<{ start: string; end: string; price: number } | null>(null);
     const [error, setError] = useState('');
@@ -149,9 +149,9 @@ const BookingModal: React.FC<BookingModalProps> = ({ studioId, studioName, onClo
             // If selected slot is no longer available, deselect it
             setSelectedSlot(prev => {
                 if (!prev) return prev;
-                const stillAvailable = newSlots.some((s: any) => s.start === prev.start);
-                if (!stillAvailable) {
-                    setError('Your selected slot was just taken. Please choose another.');
+                const updatedSlot = newSlots.find((s: any) => s.start === prev.start);
+                if (!updatedSlot || !updatedSlot.is_available) {
+                    setError('Your selected slot was just taken by another user! The time slot is now locked.');
                     return null;
                 }
                 return prev;
@@ -200,7 +200,6 @@ const BookingModal: React.FC<BookingModalProps> = ({ studioId, studioName, onClo
             const holdResponse = await api.bookings.hold(studioId, selectedSlot.start, selectedSlot.end);
             setHoldData({
                 lock_token: holdResponse.lock_token,
-                hold: { start: selectedSlot.start, end: selectedSlot.end, studio_id: studioId },
                 pricing_preview: holdResponse.pricing_preview,
                 expires_at: holdResponse.expires_at
             });
@@ -245,8 +244,11 @@ const BookingModal: React.FC<BookingModalProps> = ({ studioId, studioName, onClo
                         slots.push({
                             start: slotStart.toISOString(),
                             end: slotEnd.toISOString(),
-                            price: priceRes.total,
-                            currency: priceRes.currency || 'INR',
+                            price: {
+                                base: priceRes.base || priceRes.total,
+                                total: priceRes.total,
+                                currency: priceRes.currency || 'INR'
+                            },
                             is_available: true
                         });
                     } catch (e) {
@@ -504,14 +506,31 @@ const BookingModal: React.FC<BookingModalProps> = ({ studioId, studioName, onClo
                                             const start = new Date(slot.start);
                                             const end = new Date(slot.end);
                                             const isSelected = selectedSlot?.start === slot.start;
+                                            const isAvailable = slot.is_available;
                                             const fmt = (d: Date) => d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+                                            
+                                            if (!isAvailable) {
+                                                // BookMyShow Style Locked Slot
+                                                return (
+                                                    <div key={idx} className="border-2 p-4 text-left border-neutral-200 bg-neutral-100 text-neutral-400 cursor-not-allowed relative overflow-hidden group">
+                                                        <p className="text-sm font-black line-through">{fmt(start)}</p>
+                                                        <p className="text-xs">to {fmt(end)}</p>
+                                                        <div className="absolute inset-0 flex items-center justify-center bg-neutral-100/80 backdrop-blur-[1px]">
+                                                            <span className="font-bold text-xs uppercase tracking-widest text-neutral-500 flex items-center gap-1">
+                                                                🔒 BOOKED
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            }
+
                                             return (
                                                 <button key={idx} onClick={() => setSelectedSlot(slot)}
-                                                    className={`border-2 p-4 text-left transition-all ${isSelected ? 'border-black bg-black text-white' : 'border-gray-200 hover:border-black bg-white'}`}>
+                                                    className={`border-2 p-4 text-left transition-all ${isSelected ? 'border-black bg-black text-white outline outline-2 outline-offset-2 outline-black' : 'border-neutral-300 hover:border-black bg-white shadow-[0_2px_0_0_black] hover:-translate-y-0.5 hover:shadow-[0_4px_0_0_black]'}`}>
                                                     <p className={`text-sm font-black ${isSelected ? 'text-white' : 'text-black'}`}>{fmt(start)}</p>
-                                                    <p className={`text-xs ${isSelected ? 'text-white/70' : 'text-neutral-400'}`}>to {fmt(end)}</p>
+                                                    <p className={`text-xs ${isSelected ? 'text-white/70' : 'text-neutral-500'}`}>to {fmt(end)}</p>
                                                     {slot.price > 0 && (
-                                                        <p className={`text-sm font-bold mt-2 ${isSelected ? 'text-white' : 'text-black'}`}>
+                                                        <p className={`text-sm font-bold mt-2 ${isSelected ? 'text-[#D4AF37]' : 'text-black'}`}>
                                                             ₹{slot.price.toLocaleString('en-IN')}
                                                         </p>
                                                     )}
