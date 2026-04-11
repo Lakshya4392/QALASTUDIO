@@ -359,8 +359,8 @@ const BookingModal: React.FC<BookingModalProps> = ({ studioId, studioName, onClo
     const currentStepIndex = steps.findIndex(s => s.id === step);
 
     return (
-        <div className="fixed inset-0 z-[150] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-            <div className="bg-white w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col animate-fade-in shadow-2xl">
+        <div className="fixed inset-0 z-[150] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col animate-fade-in shadow-2xl rounded-2xl md:rounded-[2rem] border border-neutral-200">
                 {/* Header */}
                 <div className="px-8 py-6 border-b-4 border-black bg-neutral-50 flex-shrink-0">
                     <div className="flex justify-between items-start mb-6">
@@ -805,162 +805,123 @@ const BookingModal: React.FC<BookingModalProps> = ({ studioId, studioName, onClo
                     )}
 
                     {step === 'success' && (
-                        <div className="max-w-2xl text-center space-y-8 py-8">
-                            <div className="w-32 h-32 mx-auto bg-green-100 rounded-full flex items-center justify-center animate-bounce">
-                                <svg className="w-16 h-16 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7" />
-                                </svg>
-                            </div>
-                            <div>
-                                <span className="inline-block px-4 py-1 bg-green-500 text-white text-[10px] font-black uppercase tracking-widest mb-4">
-                                    CONFIRMED
-                                </span>
-                                <h3 className="text-5xl font-['Oswald'] font-bold uppercase tracking-tighter mb-4">
-                                    BOOKING CONFIRMED!
-                                </h3>
-                                <p className="text-xl text-neutral-600">
-                                    Thank you, <strong>{userDetails?.fullName}</strong>!
-                                </p>
-                            </div>
-
-                            <div className="bg-white border-2 border-neutral-200 p-6 text-left shadow-sm">
-                                <div className="space-y-6">
-                                    {/* Studio */}
-                                    <div className="flex items-start gap-4">
-                                        <div className="w-12 h-12 bg-neutral-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                            <IconBuildingOffice className="w-6 h-6 text-neutral-600" />
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500 mb-1">Studio</p>
-                                            <p className="font-bold text-lg">{studioName}</p>
-                                        </div>
+                        <div className="max-w-3xl mx-auto py-4">
+                            {/* The Ticket Container */}
+                            <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-neutral-100 flex flex-col relative animate-slide-up">
+                                
+                                {/* Top Header Section */}
+                                <div className="bg-gradient-to-br from-[#0F9D58] to-emerald-700 p-10 md:p-12 text-center relative overflow-hidden">
+                                    {/* Abstract decorative circles */}
+                                    <div className="absolute top-0 right-0 -mr-12 -mt-12 w-48 h-48 rounded-full bg-white opacity-[0.07]"></div>
+                                    <div className="absolute bottom-0 left-0 -ml-12 -mb-12 w-32 h-32 rounded-full bg-white opacity-[0.07]"></div>
+                                    
+                                    {/* Success Icon */}
+                                    <div className="w-20 h-20 md:w-24 md:h-24 mx-auto bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mb-6 border-4 border-white/30 shadow-inner">
+                                        <svg className="w-10 h-10 md:w-12 md:h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                                        </svg>
                                     </div>
-
-                                    {/* Date & Time */}
-                                    <div className="flex items-start gap-4">
-                                        <div className="w-12 h-12 bg-neutral-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                            <IconCalendar className="w-6 h-6 text-neutral-600" />
-                                        </div>
-                                        <div className="flex-1">
-                                            <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500 mb-1">Date & Time</p>
-                                            <p className="font-bold text-lg">
-                                                {date ? new Date(date).toLocaleDateString('en-IN', { weekday: 'long', month: 'long', day: 'numeric' }) : '-'}
-                                            </p>
-                                            <p className="text-neutral-600 mt-1">
-                                                {selectedSlot ? formatTimeOnly(selectedSlot.start) : ''} - {selectedSlot ? formatTimeOnly(selectedSlot.end) : ''} ({duration} hours)
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    {/* Customer */}
-                                    <div className="flex items-start gap-4">
-                                        <div className="w-12 h-12 bg-neutral-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                            <IconUser className="w-6 h-6 text-neutral-600" />
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500 mb-1">Contact Details</p>
-                                            <p className="font-bold">{userDetails.fullName}</p>
-                                            <p className="text-sm text-neutral-600">{userDetails.email}</p>
-                                            <p className="text-sm text-neutral-600">{userDetails.phone}</p>
-                                            {userDetails.company && (
-                                                <p className="text-sm text-neutral-500">{userDetails.company}</p>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* Amount */}
-                                    <div className="flex items-start gap-4">
-                                        <div className="w-12 h-12 bg-neutral-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                            <IconCreditCard className="w-6 h-6 text-neutral-600" />
-                                        </div>
-                                        <div className="flex-1 flex justify-between items-center">
-                                            <div>
-                                                <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500 mb-1">Total Amount</p>
-                                                <p className="text-2xl font-black">₹{holdData?.pricing_preview.total.toLocaleString('en-IN')}</p>
-                                            </div>
-                                            <div className="text-right">
-                                                <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500 mb-1">Payment Method</p>
-                                                <p className="font-bold">{paymentMethod === 'card' ? 'Card / UPI' : paymentMethod === 'upi' ? 'UPI' : 'Cash'}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Confirmation Code */}
-                                    <div className="flex items-start gap-4 bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-xl border-2 border-green-200">
-                                        <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center flex-shrink-0">
-                                            <IconShieldCheck className="w-6 h-6 text-green-600" />
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] font-black uppercase tracking-widest text-green-600 mb-1">Confirmation Code</p>
-                                            <p className="font-mono text-lg font-bold text-green-800 tracking-wider">
-                                                {bookingId ? bookingId.substring(0, 8).toUpperCase() : holdData.lock_token.slice(-8).toUpperCase()}
-                                            </p>
-                                            <p className="text-xs text-green-600 mt-1">Keep this code for your records</p>
-                                        </div>
-                                    </div>
-
-                                    {/* View Bookings Link */}
-                                    <div className="bg-blue-50 border-2 border-blue-200 p-4 rounded-lg">
-                                        <p className="text-blue-900 text-sm">
-                                          <strong>View your bookings anytime:</strong>{' '}
-                                          <a
-                                            href="/my-bookings"
-                                            className="font-bold underline hover:no-underline"
-                                          >
-                                            Click here to see all your reservations
-                                          </a>
-                                        </p>
-                                    </div>
-
-                                    {/* Email Status */}
-                                    <div className="flex items-start gap-4">
-                                        <div className="w-12 h-12 bg-neutral-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                            <IconEnvelope className="w-6 h-6 text-neutral-600" />
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500 mb-1">Confirmation Email</p>
-                                            {emailStatus === 'sent' ? (
-                                                <p className="text-green-600 font-bold flex items-center gap-2">
-                                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                                    </svg>
-                                                    Sent to {userDetails?.email}
-                                                </p>
-                                            ) : emailStatus === 'failed' ? (
-                                                <p className="text-red-600 font-bold flex items-center gap-2">
-                                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                                                    </svg>
-                                                    Failed to send
-                                                </p>
-                                            ) : (
-                                                <p className="text-amber-600 font-bold flex items-center gap-2">
-                                                    Processing...
-                                                </p>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {emailStatus === 'failed' && (
-                                <div className="bg-amber-50 border-2 border-amber-300 p-6 text-left">
-                                    <p className="text-amber-900 font-bold mb-2">⚠️ Email delivery failed</p>
-                                    <p className="text-amber-800 text-sm">
-                                        Your booking is confirmed! Please keep your confirmation code above. Contact us at <strong>{contact.email}</strong> or <strong>{contact.phone}</strong> if needed.
+                                    
+                                    <span className="inline-block px-4 py-1.5 bg-white/20 text-white backdrop-blur-md rounded-full text-[10px] font-black uppercase tracking-widest mb-4 border border-white/30 shadow-sm">
+                                        Booking Confirmed
+                                    </span>
+                                    
+                                    <h3 className="text-4xl md:text-5xl font-['Oswald'] font-bold uppercase tracking-tight text-white mb-2 drop-shadow-sm">
+                                        You're All Set!
+                                    </h3>
+                                    <p className="text-emerald-50 text-base md:text-lg opacity-90">
+                                        Thank you, <strong>{userDetails?.fullName}</strong>. We can't wait to host you.
                                     </p>
                                 </div>
-                            )}
 
-                            <button
-                                onClick={onClose}
-                                className="px-12 py-5 bg-black text-white uppercase font-black text-xs tracking-[0.3em] hover:opacity-90 transition-all flex items-center justify-center gap-2"
-                            >
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                </svg>
-                                Done
-                            </button>
+                                {/* The Divider line with ticket cutouts */}
+                                <div className="relative h-8 bg-white flex items-center justify-center z-10 -my-4">
+                                    {/* Left Cutout */}
+                                    <div className="absolute left-0 -translate-x-1/2 w-8 h-8 rounded-full bg-[#E5E5E5] shadow-inner"></div>
+                                    {/* Right Cutout */}
+                                    <div className="absolute right-0 translate-x-1/2 w-8 h-8 rounded-full bg-[#E5E5E5] shadow-inner"></div>
+                                    
+                                    {/* Dashed Line */}
+                                    <div className="w-full border-t-2 border-dashed border-neutral-200 mx-6"></div>
+                                </div>
+
+                                {/* Details / Receipt Section */}
+                                <div className="p-8 md:p-12 bg-white space-y-8 z-0 pt-10">
+                                    
+                                    {/* Confirmation Code strictly highlighted */}
+                                    <div className="text-center p-6 bg-neutral-50 rounded-2xl border border-neutral-100 transition-all hover:bg-neutral-100">
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-2">Your Confirmation Code</p>
+                                        <p className="font-mono text-4xl md:text-5xl font-black text-black tracking-widest">
+                                            {bookingId ? bookingId.substring(0, 8).toUpperCase() : holdData?.lock_token.slice(-8).toUpperCase()}
+                                        </p>
+                                        <p className="text-xs text-neutral-500 mt-2">Keep this code handy when you arrive.</p>
+                                    </div>
+
+                                    {/* Grid of Details */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        <div>
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-1.5 flex items-center gap-2"><IconBuildingOffice className="w-3 h-3"/> Studio</p>
+                                            <p className="font-bold text-xl text-neutral-800">{studioName}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-1.5 flex items-center gap-2"><IconCalendar className="w-3 h-3"/> Date & Time</p>
+                                            <p className="font-bold text-xl text-neutral-800">
+                                                {date ? new Date(date).toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric' }) : '-'}
+                                            </p>
+                                            <p className="text-sm text-neutral-500 font-medium mt-0.5">
+                                                {selectedSlot ? formatTimeOnly(selectedSlot.start) : ''} - {selectedSlot ? formatTimeOnly(selectedSlot.end) : ''} ({duration} hrs)
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-1.5 flex items-center gap-2"><IconCreditCard className="w-3 h-3"/> Amount & Payment</p>
+                                            <p className="font-black text-2xl text-neutral-800">₹{holdData?.pricing_preview.total.toLocaleString('en-IN')}</p>
+                                            <p className="text-sm text-neutral-500 font-medium mt-0.5">
+                                                {paymentMethod === 'card' ? 'Online Mode (Card/UPI)' : paymentMethod === 'upi' ? 'Direct UPI' : 'Cash upon arrival'}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-1.5 flex items-center gap-2"><IconUser className="w-3 h-3"/> Contact Details</p>
+                                            <p className="font-bold text-neutral-800 truncate text-lg">{userDetails?.email}</p>
+                                            <p className="text-sm text-neutral-500 font-medium mt-0.5">{userDetails?.phone}</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Email Status & View Link */}
+                                    <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-neutral-50 p-4 rounded-xl border border-neutral-100">
+                                        <div className="flex items-center gap-3">
+                                            {emailStatus === 'sent' ? (
+                                                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 border border-green-200"><IconShieldCheck className="w-5 h-5"/></div>
+                                            ) : emailStatus === 'failed' ? (
+                                                <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-600 border border-red-200"><IconAlertTriangle className="w-5 h-5"/></div>
+                                            ) : (
+                                                <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 border border-amber-200 animate-pulse"><IconEnvelope className="w-5 h-5"/></div>
+                                            )}
+                                            <div>
+                                                <p className="text-sm font-bold text-neutral-800">
+                                                    {emailStatus === 'sent' ? 'Receipt Emailed' : emailStatus === 'failed' ? 'Email Failed' : 'Sending Receipt...'}
+                                                </p>
+                                                <p className="text-[11px] text-neutral-500">
+                                                    {emailStatus === 'sent' ? `Sent to ${userDetails?.email}` : emailStatus === 'failed' ? 'Please take a screenshot of this page' : 'Processing delivery...'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        
+                                        <a href="/my-bookings" className="text-[10px] font-black uppercase tracking-widest text-black hover:text-white transition-colors px-5 py-3 border-2 border-black hover:bg-black rounded-lg">
+                                            View Reservations →
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Done / Close Button Outside Ticket */}
+                            <div className="mt-8 flex justify-center">
+                                <button
+                                    onClick={onClose}
+                                    className="px-14 py-4 bg-black text-white rounded-full uppercase font-black text-xs tracking-widest hover:-translate-y-1 hover:shadow-xl shadow-lg hover:shadow-black/20 transition-all active:translate-y-0"
+                                >
+                                    Dismiss Screen
+                                </button>
+                            </div>
                         </div>
                     )}
                 </div>
