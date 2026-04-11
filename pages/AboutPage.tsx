@@ -134,15 +134,7 @@ const AboutPage: React.FC = () => {
                   alt={member1?.name}
                   className="w-full grayscale group-hover:grayscale-0 transition-all duration-1000 transform group-hover:scale-105"
                 />
-                <div className="absolute top-10 left-10 text-[#D4AF37] text-2xl rotate-[-5deg] opacity-0 group-hover:opacity-100 transition-all duration-700 whitespace-pre-line italic">
-                  {member1?.annotations?.[0]}
-                </div>
-                <div className="absolute top-1/2 right-10 text-[#1D1D1F] text-xl rotate-12 opacity-0 group-hover:opacity-100 transition-all duration-700 delay-100 whitespace-pre-line italic">
-                  {member1?.annotations?.[1]}
-                </div>
-                <div className="absolute bottom-1/4 left-1/4 text-[#D4AF37] text-lg rotate-3 opacity-0 group-hover:opacity-100 transition-all duration-700 delay-200 whitespace-pre-line italic">
-                  {member1?.annotations?.[2]}
-                </div>
+
                 <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#F5F5F7] to-transparent pointer-events-none" />
               </div>
               <div className="absolute -bottom-10 -right-10 text-[120px] font-['Oswald'] font-black opacity-[0.04] pointer-events-none group-hover:opacity-[0.08] transition-opacity">
@@ -170,15 +162,7 @@ const AboutPage: React.FC = () => {
                   alt={member2?.name}
                   className="w-full grayscale group-hover:grayscale-0 transition-all duration-1000 transform group-hover:scale-105"
                 />
-                <div className="absolute top-1/4 left-0 text-[#D4AF37] text-2xl rotate-[-15deg] opacity-0 group-hover:opacity-100 transition-all duration-700 whitespace-pre-line italic">
-                  {member2?.annotations?.[0]}
-                </div>
-                <div className="absolute top-10 right-10 text-[#1D1D1F] text-xl rotate-6 opacity-0 group-hover:opacity-100 transition-all duration-700 delay-100 whitespace-pre-line italic">
-                  {member2?.annotations?.[1]}
-                </div>
-                <div className="absolute bottom-20 right-4 text-[#D4AF37] text-lg -rotate-3 opacity-0 group-hover:opacity-100 transition-all duration-700 delay-200 whitespace-pre-line italic">
-                  {member2?.annotations?.[2]}
-                </div>
+
                 <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#F5F5F7] to-transparent pointer-events-none" />
               </div>
               <div className="absolute -bottom-10 -left-10 text-[120px] font-['Oswald'] font-black opacity-[0.04] pointer-events-none group-hover:opacity-[0.08] transition-opacity">
@@ -206,15 +190,7 @@ const AboutPage: React.FC = () => {
                   alt={member3?.name}
                   className="w-full grayscale group-hover:grayscale-0 transition-all duration-1000 transform group-hover:scale-105"
                 />
-                <div className="absolute top-20 left-10 text-[#D4AF37] text-2xl rotate-[-10deg] opacity-0 group-hover:opacity-100 transition-all duration-700 whitespace-pre-line italic">
-                  {member3?.annotations?.[0]}
-                </div>
-                <div className="absolute top-1/2 right-4 text-[#1D1D1F] text-xl rotate-12 opacity-0 group-hover:opacity-100 transition-all duration-700 delay-100 whitespace-pre-line italic">
-                  {member3?.annotations?.[1]}
-                </div>
-                <div className="absolute bottom-1/4 right-1/4 text-[#D4AF37] text-lg -rotate-6 opacity-0 group-hover:opacity-100 transition-all duration-700 delay-200 whitespace-pre-line italic">
-                  {member3?.annotations?.[2]}
-                </div>
+
                 <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#F5F5F7] to-transparent pointer-events-none" />
               </div>
               <div className="absolute -bottom-10 -right-10 text-[120px] font-['Oswald'] font-black opacity-[0.04] pointer-events-none group-hover:opacity-[0.08] transition-opacity">
