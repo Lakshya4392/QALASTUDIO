@@ -11,13 +11,14 @@ jobs:
         with:
           repository: Lakshya4392/portfolios
           token: ${{ secrets.PORTFOLIO_PAT }}
-          submodules: false
+          fetch-depth: 0
 
       - name: Update submodule pointer
         run: |
           git config user.email "bot@antigravity.dev"
           git config user.name "AG Bot"
-          git submodule update --remote clients/qala-studio
+          # Direct update via git command
+          git submodule update --init --remote clients/qala-studio
           git add clients/qala-studio
-          git diff --cached --quiet || git commit -m "auto: update qala-studio to $(date +%Y-%m-%d)"
+          git commit -m "auto: sync qala-studio update" || echo "No changes to commit"
           git push
