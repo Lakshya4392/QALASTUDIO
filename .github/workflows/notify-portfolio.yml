@@ -1,0 +1,23 @@
+name: Update Portfolio Submodule
+on:
+  push:
+    branches: [main]
+jobs:
+  update-portfolio:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout portfolio repo
+        uses: actions/checkout@v4
+        with:
+          repository: Lakshya4392/portfolios
+          token: ${{ secrets.PORTFOLIO_PAT }}
+          submodules: false
+
+      - name: Update submodule pointer
+        run: |
+          git config user.email "bot@antigravity.dev"
+          git config user.name "AG Bot"
+          git submodule update --remote clients/qala-studio
+          git add clients/qala-studio
+          git diff --cached --quiet || git commit -m "auto: update qala-studio to $(date +%Y-%m-%d)"
+          git push
